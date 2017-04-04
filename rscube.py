@@ -1,6 +1,5 @@
 from kociemba import solve
 from PIL import Image, ImageStat
-from numpy import mean
 
 U = 0
 R = 1
@@ -20,8 +19,8 @@ THRESHOLD = 8 # used to determine how close a color (luminance) is
 #
 # String is comma separated moves, with the following commands:
 # Note: using lower case o and c so it doesn't look like 0
-# A : Gripper A (front gripper)
-# B : Gripper B (back gripper)
+# A : gripper A (front gripper)
+# B : gripper B (back gripper)
 # o : Open
 # c : Close
 # + : Clockwise turn
@@ -87,62 +86,62 @@ class MyCube():
 		self.norm_colors = [[None for i in range(9)] for j in range(6)] # letter representing normalized color for each site on cube
 		self.face_colors = [None for i in range(6)] # raw color of the center site on each face
 		self.logo_site = None # store location of site with logo
-		self.orientation = 'UFD' # current orientation of the cube, Upface, Gripper A Face, Gripper B Face
+		self.orientation = 'UFD' # current orientation of the cube, Upface, gripper A Face, gripper B Face
 		self.cube_def = None # string representing cube in order U1U2U3...R1...F1...etc
 		self.solve_string = None # intructions to solve cube
 
 	"""
 	This will rotate cube and scan each side to process each face
 	"""
-	def ScanFaces(self):
+	def scan_faces(self):
 		# Fully close both grippers
-		Grip('A', 'c')
-		Grip('B', 'c')
+		grip('A', 'c')
+		grip('B', 'c')
 
-		self.ProcessFace(U, 0)
+		self.process_face(U, 0)
 
-		Grip('B', 'o')
+		grip('B', 'o')
 
-		TwistGripper('A', '+')
-		TwistGripper('A', '+')
+		twist_gripper('A', '+')
+		twist_gripper('A', '+')
 
-		self.ProcessFace(D, 180)
+		self.process_face(D, 180)
 
-		TwistGripper('A', '+')
-		Grip('B', 'c')
-		Grip('A', 'o')
-		TwistGripper('A', '-')
-		Grip('A', 'c')
+		twist_gripper('A', '+')
+		grip('B', 'c')
+		grip('A', 'o')
+		twist_gripper('A', '-')
+		grip('A', 'c')
 
-		self.ProcessFace(R, 270)
+		self.process_face(R, 270)
 
-		Grip('B', 'o')
-		TwistGripper('A', '+')
-		TwistGripper('A', '+')
+		grip('B', 'o')
+		twist_gripper('A', '+')
+		twist_gripper('A', '+')
 
-		self.ProcessFace(L, 90)
+		self.process_face(L, 90)
 
-		Grip('B', 'c')
-		Grip('A', 'o')
-		TwistGripper('B', '+')
-		Grip('A', 'c')
-		Grip('B', 'o')
-		TwistGripper('B', '-')
-		TwistGripper('A', '+')
-		Grip('B', 'c')
-		Grip('A', 'o')
-		TwistGripper('A', '-')
-		Grip('A', 'c')
+		grip('B', 'c')
+		grip('A', 'o')
+		twist_gripper('B', '+')
+		grip('A', 'c')
+		grip('B', 'o')
+		twist_gripper('B', '-')
+		twist_gripper('A', '+')
+		grip('B', 'c')
+		grip('A', 'o')
+		twist_gripper('A', '-')
+		grip('A', 'c')
 
-		self.ProcessFace(B, 0)
+		self.process_face(B, 0)
 
-		Grip('B', 'o')
-		TwistGripper('A', '+')
-		TwistGripper('A', '+')
+		grip('B', 'o')
+		twist_gripper('A', '+')
+		twist_gripper('A', '+')
 
-		self.ProcessFace(F, 0)
+		self.process_face(F, 0)
 
-		Grip('B', 'c')
+		grip('B', 'c')
 
 		self.orientation = 'FDB'
 		#print 'Current orientation:', self.orientation # DEBUG
@@ -151,7 +150,7 @@ class MyCube():
 	Gets image from camera, rotates as necessary, gets average (mean) colors
 	in each region with probability, and stores in raw_colors
 	"""
-	def ProcessFace(self, face, orientation):
+	def process_face(self, face, orientation):
 		#get image from camera
 		face_im = Image.open(testimages[face]) # DEBUG load test images instead
 
@@ -177,7 +176,7 @@ class MyCube():
 	"""
 	Loops through raw_colors and tries to identify and assign face colors
 	"""
-	def GuessColors(self):
+	def guess_colors(self):
 
 		# start by assigning the center color[4] to the face_colors list.
 		for face, colors in enumerate(self.raw_colors):
@@ -221,11 +220,11 @@ class MyCube():
 		self.solve_string = solve(self.cube_def)
 
 """
-Function to open or close Gripper
+Function to open or close gripper
 gripper = 'A' or 'B'
 cmd = 'o' 'c' or 'l' for load
 """
-def Grip(gripper, cmd):
+def grip(gripper, cmd):
 	temp = ''
 	if cmd == 'o':
 		temp = 'Open'
@@ -241,7 +240,7 @@ Function to twist gripper
 gripper = 'A' or 'B'
 dir = '+' 90-deg CW, '-' 90-deg CCW
 """
-def TwistGripper(gripper, dir):
+def twist_gripper(gripper, dir):
 	print 'Twist gripper', gripper, dir
 
 def luminance(pixel):

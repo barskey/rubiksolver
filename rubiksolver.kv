@@ -1,0 +1,214 @@
+BoxLayout:
+	canvas:
+		Rectangle:
+			pos: self.pos
+			size: self.size
+			source: 'data/bg.png'
+
+<MainMenu>:
+	name: 'home'
+	
+	RelativeLayout:
+
+		Label:
+			text: 'Rubik Solv-O-Matic'
+			font_size: 30
+			pos_hint: {'center_y': 0.875}
+			bold: True
+			color: (0, 1, 0, 1)
+			
+		Label:
+			text: 'Insert the cube and click Scan to continue.'
+			font_size: 20
+			pos_hint: {'center_y': 0.75}
+			color: (0, 1, 0, 1)
+			
+
+		Button:
+			text: 'Settings'
+			font_size: 20
+			background_color: (0.5, 0.5, 0.5, 1)
+			size_hint: None, None
+			width: 100
+			height: 40
+			pos_hint: {'left': 0, 'bottom': 0}
+			on_release:
+				app.go_screen('settings', 'right')
+
+		Button:
+			text: 'Scan'
+			font_size: 20
+			bold: True
+			background_color: (0, 1, 0, 1)
+			size_hint: None, None
+			width: 100
+			height: 40
+			pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+			on_release:
+				app.go_screen('scan', 'None')
+
+<Settings>:
+	name: 'settings'
+	
+	TabbedPanel:
+		id: tp
+		do_default_tab: False
+		
+		TabbedPanelItem:
+			id: tab_sites
+			text: 'Sites'
+			BoxLayout:
+				Label:
+					text: 'Sites Tab'
+		
+		TabbedPanelItem:
+			id: tab_grip
+			text: 'Grippers'
+			BoxLayout:
+				BoxLayout:
+					orientation: 'vertical'
+					
+					Label:
+						text: 'Gripper A'
+						font_size: 20
+					
+					BoxLayout:
+						orientation: 'horizontal'
+						
+						Button:
+							text: 'Closed'
+						
+						Slider:
+							range: (0, 100)
+
+					BoxLayout:
+						orientation: 'horizontal'
+						
+						Button:
+							text: 'Open'
+						
+						Slider:
+							range: (0, 100)
+							
+					BoxLayout:
+						orientation: 'horizontal'
+						
+						Button:
+							text: 'Load'
+						
+						Slider:
+							range: (0, 100)
+							
+					BoxLayout:
+						orientation: 'horizontal'
+						
+						Button:
+							text: 'Pos:  0'
+						
+						Slider:
+							range: (0, 100)
+
+					BoxLayout:
+						orientation: 'horizontal'
+						
+						Button:
+							text: 'Pos: 90'
+						
+						Slider:
+							range: (0, 100)
+							
+					BoxLayout:
+						orientation: 'horizontal'
+						
+						Button:
+							text: 'Pos:180'
+						
+						Slider:
+							range: (0, 100)
+							
+					BoxLayout:
+						orientation: 'horizontal'
+						
+						Button:
+							text: 'Pos:270'
+						
+						Slider:
+							range: (0, 100)
+
+				BoxLayout:
+					orientation: 'vertical'
+					
+					Label:
+						text: 'Gripper B'
+						font_size: 20
+					
+					BoxLayout:
+						orientation: 'horizontal'
+						
+						Button:
+							text: 'Closed'
+						
+						Slider:
+							range: (0, 100)
+
+					BoxLayout:
+						orientation: 'horizontal'
+						
+						Button:
+							text: 'Open'
+						
+						Slider:
+							range: (0, 100)
+							
+					BoxLayout:
+						orientation: 'horizontal'
+						
+						Button:
+							text: 'Load'
+						
+						Slider:
+							range: (0, 100)
+							
+					BoxLayout:
+						orientation: 'horizontal'
+						
+						Button:
+							text: 'Pos:  0'
+						
+						Slider:
+							range: (0, 100)
+
+					BoxLayout:
+						orientation: 'horizontal'
+						
+						Button:
+							text: 'Pos: 90'
+						
+						Slider:
+							range: (0, 100)
+							
+					BoxLayout:
+						orientation: 'horizontal'
+						
+						Button:
+							text: 'Pos:180'
+						
+						Slider:
+							range: (0, 100)
+							
+					BoxLayout:
+						orientation: 'horizontal'
+						
+						Button:
+							text: 'Pos:270'
+						
+						Slider:
+							range: (0, 100)
+							
+					
+		TabbedPanelItem:
+			id: tab_test
+			text: 'Test'
+			BoxLayout:
+				Label:
+					text: 'Test Tab'

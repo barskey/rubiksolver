@@ -1,3 +1,3 @@
+kivy
 kociemba
 pillow
-numpy
