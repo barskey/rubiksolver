@@ -1,4 +1,4 @@
-BoxLayout:
+<RubikSolver>:
 	canvas:
 		Rectangle:
 			pos: self.pos
@@ -23,7 +23,6 @@ BoxLayout:
 			pos_hint: {'center_y': 0.75}
 			color: (0, 1, 0, 1)
 			
-
 		Button:
 			text: 'Settings'
 			font_size: 20
@@ -74,66 +73,82 @@ BoxLayout:
 					
 					BoxLayout:
 						orientation: 'horizontal'
-						
 						Button:
 							text: 'Closed'
-						
 						Slider:
-							range: (0, 100)
+							id: gripa_closed
+							min: app.gripper_a['closed'] - 20
+							max: app.gripper_a['closed'] + 20
+							value: app.gripper_a['closed']
+							step: 1
+							on_value: app.update_settings('GripperA', 'closed', self.value)
 
 					BoxLayout:
 						orientation: 'horizontal'
-						
 						Button:
 							text: 'Open'
-						
 						Slider:
-							range: (0, 100)
+							id: gripa_open
+							min: app.gripper_a['open'] - 20
+							max: app.gripper_a['open'] + 20
+							value: app.gripper_a['open']
+							step: 1
+							on_value: app.update_settings('GripperA', 'open', self.value)
 							
 					BoxLayout:
 						orientation: 'horizontal'
-						
 						Button:
 							text: 'Load'
-						
 						Slider:
-							range: (0, 100)
+							min: app.gripper_a['load'] - 20
+							max: app.gripper_a['load'] + 20
+							value: app.gripper_a['load']
+							step: 1
+							on_value: app.update_settings('GripperA', 'load', self.value)
 							
 					BoxLayout:
 						orientation: 'horizontal'
-						
 						Button:
 							text: 'Pos:  0'
-						
 						Slider:
-							range: (0, 100)
+							min: app.gripper_a['pos0'] - 20
+							max: app.gripper_a['pos0'] + 20
+							value: app.gripper_a['pos0']
+							step: 1
+							on_value: app.update_settings('GripperA', 'pos0', self.value)
 
 					BoxLayout:
 						orientation: 'horizontal'
-						
 						Button:
 							text: 'Pos: 90'
-						
 						Slider:
-							range: (0, 100)
+							min: app.gripper_a['pos90'] - 20
+							max: app.gripper_a['pos90'] + 20
+							value: app.gripper_a['pos90']
+							step: 1
+							on_value: app.update_settings('GripperA', 'pos90', self.value)
 							
 					BoxLayout:
 						orientation: 'horizontal'
-						
 						Button:
 							text: 'Pos:180'
-						
 						Slider:
-							range: (0, 100)
+							min: app.gripper_a['pos180'] - 20
+							max: app.gripper_a['pos180'] + 20
+							value: app.gripper_a['pos180']
+							step: 1
+							on_value: app.update_settings('GripperA', 'pos180', self.value)
 							
 					BoxLayout:
 						orientation: 'horizontal'
-						
 						Button:
 							text: 'Pos:270'
-						
 						Slider:
-							range: (0, 100)
+							min: app.gripper_a['pos270'] - 20
+							max: app.gripper_a['pos270'] + 20
+							value: app.gripper_a['pos270']
+							step: 1
+							on_value: app.update_settings('GripperA', 'pos270', self.value)
 
 				BoxLayout:
 					orientation: 'vertical'
@@ -144,68 +159,67 @@ BoxLayout:
 					
 					BoxLayout:
 						orientation: 'horizontal'
-						
 						Button:
 							text: 'Closed'
-						
 						Slider:
-							range: (0, 100)
+							min: app.gripper_b['closed'] - 20
+							max: app.gripper_b['closed'] + 20
+							value: app.gripper_b['closed']
 
 					BoxLayout:
 						orientation: 'horizontal'
-						
 						Button:
 							text: 'Open'
-						
 						Slider:
-							range: (0, 100)
+							min: app.gripper_b['open'] - 20
+							max: app.gripper_b['open'] + 20
+							value: app.gripper_b['open']
 							
 					BoxLayout:
 						orientation: 'horizontal'
-						
 						Button:
 							text: 'Load'
-						
 						Slider:
-							range: (0, 100)
+							min: app.gripper_b['load'] - 20
+							max: app.gripper_b['load'] + 20
+							value: app.gripper_b['load']
 							
 					BoxLayout:
 						orientation: 'horizontal'
-						
 						Button:
 							text: 'Pos:  0'
-						
 						Slider:
-							range: (0, 100)
+							min: app.gripper_b['pos0'] - 20
+							max: app.gripper_b['pos0'] + 20
+							value: app.gripper_b['pos0']
 
 					BoxLayout:
 						orientation: 'horizontal'
-						
 						Button:
 							text: 'Pos: 90'
-						
 						Slider:
-							range: (0, 100)
+							min: app.gripper_b['pos90'] - 20
+							max: app.gripper_b['pos90'] + 20
+							value: app.gripper_b['pos90']
 							
 					BoxLayout:
 						orientation: 'horizontal'
-						
 						Button:
 							text: 'Pos:180'
-						
 						Slider:
-							range: (0, 100)
+							min: app.gripper_b['pos180'] - 20
+							max: app.gripper_b['pos180'] + 20
+							value: app.gripper_b['pos180']
 							
 					BoxLayout:
 						orientation: 'horizontal'
-						
 						Button:
 							text: 'Pos:270'
-						
 						Slider:
-							range: (0, 100)
-							
-					
+							min: app.gripper_b['pos270'] - 20
+							max: app.gripper_b['pos270'] + 20
+							value: app.gripper_b['pos270']
+				
 		TabbedPanelItem:
 			id: tab_test
 			text: 'Test'
