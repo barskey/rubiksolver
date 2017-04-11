@@ -1,20 +1,20 @@
 [Sites]
 
 [GripperA]
-open = -10
-closed = 94
-load = 89
-pos0 = 0
-pos90 = 90
-pos180 = 180
-pos270 = 270
+open = 0
+closed = 39
+load = 27
+pos0 = -6
+pos90 = 45
+pos180 = 80
+pos270 = 60
 
 [GripperB]
-open = 0
-closed = 90
-load = 80
+open = 4
+closed = 19
+load = 13
 pos0 = 0
-pos90 = 90
-pos180 = 180
-pos270 = 270
+pos90 = 25
+pos180 = 60
+pos270 = 60
 
