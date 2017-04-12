@@ -1,5 +1,18 @@
 from kociemba import solve
 from PIL import Image, ImageStat
+#import RPi.GPIO as GPIO
+
+PINS = {
+	'twistA': 1,
+	'gripA' : 2,
+	'twistB': 3,
+	'gripB' : 4
+}
+
+#Setup position pin GPIOs as inputs
+#GPIO.setmode(GPIO.BCM)
+#for pin, gpio_port in PINS.items():
+#	GPIO.setup(gpio_port, GPIO.IN)
 
 U = 0
 R = 1
@@ -8,14 +21,14 @@ D = 3
 L = 4
 B = 5
 
-faces = ['U', 'R', 'F', 'D', 'L', 'B']
+FACES = ['U', 'R', 'F', 'D', 'L', 'B']
 
 THRESHOLD = 8 # used to determine how close a color (luminance) is
 
 # ----------------------------------------------------------------------
 # Lookup table to store moves to get from given face to gripper A or B.
 # Relative to cube in default position ordered URFDLB
-# e.g. moves_to_A[D] would be the moves to get face in position D to gripper A
+# e.g. MOVES_TO_A[D] would be the moves to get face in position D to gripper A
 #
 # String is comma separated moves, with the following commands:
 # Note: using lower case o and c so it doesn't look like 0
@@ -25,24 +38,24 @@ THRESHOLD = 8 # used to determine how close a color (luminance) is
 # c : Close
 # + : Clockwise turn
 # - : Counter-clockwise turn
-moves_to_A = [
+MOVES_TO_A = [
 	'Bo,A-,Bc,Ao,B+,A+,Ac,Bo,B-,Bc', 'Ao,B-,Ac,Bo,B+,Bc', '', 'Bo,A+,Bc,Ao,B+,A-,Ac,Bo,B-,Bc', 'Ao,B+,Ac,Bo,B-,Bc', 'Ao,B+,B+,Ac'
 ]
 
-moves_to_B = [
+MOVES_TO_B = [
 	'Bo,A+,A+,Bc', 'Bo,A+,Bc,Ao,A-,Ac', 'Ao,B+,Ac,Bo,B-,A+,Bc,Ao,A-,Ac', '', 'Bo,A-,Bc,Ao,A+,Ac', 'Ao,B+,Ac,Bo,B-,A-,Bc,Ao,A+,Ac'
 ]
 
 # Lookup table for new orientation after moving a face to gripper A or B when the cube is in the default position
 # e.g. new_orientation_A[D] gives 'LDR', which the cube will be in after moving D to girpper A
-new_orientation_A = ['RUL', 'URD', 'UFD', 'LDR', 'ULD', 'UBD']
+NEW_ORIENTATION_A = ['RUL', 'URD', 'UFD', 'LDR', 'ULD', 'UBD']
 
-new_orientation_B = ['DFU', 'LFR', 'BLF', 'UFD', 'RFL', 'FLB']
+NEW_ORIENTATION_B = ['DFU', 'LFR', 'BLF', 'UFD', 'RFL', 'FLB']
 
 # Translate table to get from current orientation to representation as if in default position
 # Order of faces is URFDLB - e.g. for face_position['RUL'], R is in default U, F is in default R, U is in default F, etc.
 # so face_position['RUL'][L] gives face B in the default L position
-face_position = {
+FACE_POSITION = {
 	'UFD': [U, R, F, D, L, B],
 	'RUL': [R, F, U, L, B, D],
 	'URD': [U, B, R, D, F, L],
@@ -81,7 +94,7 @@ testimages = [
 
 class MyCube():
 
-	def __init__(self):
+	def __init__(self, crop):
 		self.raw_colors = [[None for i in range(9)] for j in range(6)] # luminance for each raw color found on cube
 		self.norm_colors = [[None for i in range(9)] for j in range(6)] # letter representing normalized color for each site on cube
 		self.face_colors = [None for i in range(6)] # raw color of the center site on each face
@@ -89,59 +102,66 @@ class MyCube():
 		self.orientation = 'UFD' # current orientation of the cube, Upface, gripper A Face, gripper B Face
 		self.cube_def = None # string representing cube in order U1U2U3...R1...F1...etc
 		self.solve_string = None # intructions to solve cube
+		
+		self.twist_a_pos = get_pos('twistA')
+		self.twist_b_pos = get_pos('twistB')
+		self.grip_a_pos = get_pos('gripA')
+		self.grip_b_pos = get_pos('gripB')
+		
+		self.crop = crop
 
 	"""
 	This will rotate cube and scan each side to process each face
 	"""
 	def scan_faces(self):
 		# Fully close both grippers
-		grip('A', 'c')
-		grip('B', 'c')
+		self.grip('A', 'c')
+		self.grip('B', 'c')
 
 		self.process_face(U, 0)
 
-		grip('B', 'o')
+		self.grip('B', 'o')
 
-		twist_gripper('A', '+')
-		twist_gripper('A', '+')
+		self.twist('A', '+')
+		self.twist('A', '+')
 
 		self.process_face(D, 180)
 
-		twist_gripper('A', '+')
-		grip('B', 'c')
-		grip('A', 'o')
-		twist_gripper('A', '-')
-		grip('A', 'c')
+		self.twist('A', '+')
+		self.grip('B', 'c')
+		self.grip('A', 'o')
+		self.twist('A', '-')
+		self.grip('A', 'c')
 
 		self.process_face(R, 270)
 
-		grip('B', 'o')
-		twist_gripper('A', '+')
-		twist_gripper('A', '+')
+		self.grip('B', 'o')
+		self.twist('A', '+')
+		self.twist('A', '+')
 
 		self.process_face(L, 90)
 
-		grip('B', 'c')
-		grip('A', 'o')
-		twist_gripper('B', '+')
-		grip('A', 'c')
-		grip('B', 'o')
-		twist_gripper('B', '-')
-		twist_gripper('A', '+')
-		grip('B', 'c')
-		grip('A', 'o')
-		twist_gripper('A', '-')
-		grip('A', 'c')
+		self.grip('B', 'c')
+		self.grip('A', 'o')
+		self.twist('B', '+')
+		self.grip('A', 'c')
+		self.grip('B', 'o')
+		self.twist('B', '-')
+		self.twist('A', '+')
+		self.grip('B', 'c')
+		self.grip('A', 'o')
+		self.twist('A', '-')
+		self.grip('A', 'c')
 
 		self.process_face(B, 0)
 
-		grip('B', 'o')
-		twist_gripper('A', '+')
-		twist_gripper('A', '+')
+		self.grip('B', 'o')
+		self.twist('A', '+')
+		self.twist('A', '+')
 
 		self.process_face(F, 0)
 
-		grip('B', 'c')
+		self.grip('B', 'c')
 
 		self.orientation = 'FDB'
 		#print 'Current orientation:', self.orientation # DEBUG
@@ -155,7 +175,7 @@ class MyCube():
 		face_im = Image.open(testimages[face]) # DEBUG load test images instead
 
 		# crop the image to square
-		img = face_im.crop((160, 80, 480, 400))
+		img = face_im.crop((self.crop['left'], self.crop['bot'], self.crop['right'], self.crop['top']))
 
 		# rotate image as necessary so colors are records in correct order
 		img = img.rotate(-orientation)
@@ -187,7 +207,7 @@ class MyCube():
 		missing_face = None
 		if self.logo_site:
 			missing_face = self.face_colors.index(None)
-		print faces[missing_face] # Debug
+		print FACES[missing_face] # Debug
 
 		# check every site on the cube for a good match for the missing color
 		for face, colors in enumerate(self.raw_colors): # for each face on the cube
@@ -196,7 +216,7 @@ class MyCube():
 				try_color = []
 				for face_color in self.face_colors:
 					if face_color is not None and color is not None:
-						if not is_similar(color, face_color, THRESHOLD):
+						if not self.is_similar(color, face_color, THRESHOLD):
 							try_color.append(color)
 		print try_color
 		if missing_face:
@@ -208,8 +228,8 @@ class MyCube():
 				# compare to each color in the colors list to check for a close enough match
 				match = False
 				for face_color in self.face_colors:
-					if is_similar(color, face_color, THRESHOLD):
-						self.norm_colors[face][site] = faces[face]
+					if self.is_similar(color, face_color, THRESHOLD):
+						self.norm_colors[face][site] = FACES[face]
 						match = True
 				if not match:
 					print 'Could not find a match for face: %s, site: %s, lum: %s' % (face, site, color)
@@ -219,32 +239,42 @@ class MyCube():
 	def get_solve_string(self):
 		self.solve_string = solve(self.cube_def)
 
-"""
-Function to open or close gripper
-gripper = 'A' or 'B'
-cmd = 'o' 'c' or 'l' for load
-"""
-def grip(gripper, cmd):
-	temp = ''
-	if cmd == 'o':
-		temp = 'Open'
-	elif cmd == 'c':
-		temp = 'Close'
-	elif cmd == 'l':
-		temp = 'Load'
+	"""
+	Function to get current position of servo
+	"""
+	def get_pos(servo_pin):
+		# TODO read input pin for servo position
+		# pos = GPIO.input(servo_pin)
+		pos = 90 # debug
+		
+		return pos
 
-	print temp, 'gripper', gripper
+	"""
+	Function to open or close gripper
+	gripper = 'A' or 'B'
+	cmd = 'o' 'c' or 'l' for load
+	"""
+	def grip(gripper, cmd):
+		temp = ''
+		if cmd == 'o':
+			temp = 'Open'
+		elif cmd == 'c':
+			temp = 'Close'
+		elif cmd == 'l':
+			temp = 'Load'
 
-"""
-Function to twist gripper
-gripper = 'A' or 'B'
-dir = '+' 90-deg CW, '-' 90-deg CCW
-"""
-def twist_gripper(gripper, dir):
-	print 'Twist gripper', gripper, dir
+		print temp, 'gripper', gripper
 
-def luminance(pixel):
-	return (0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2])
+	"""
+	Function to twist gripper
+	gripper = 'A' or 'B'
+	dir = '+' 90-deg CW, '-' 90-deg CCW
+	"""
+	def twist(gripper, dir):
+		print 'Twist gripper', gripper, dir
 
-def is_similar(a, b, threshold):
-    return abs(luminance(a) - luminance(b)) < threshold
+	def luminance(pixel):
+		return (0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2])
+
+	def is_similar(a, b, threshold):
+		return abs(self.luminance(a) - self.luminance(b)) < threshold

@@ -49,6 +49,17 @@
 <SettingsSlider>:
 	step: 1
 
+<CropBox>:
+	canvas:
+		Color:
+			rgba: 1, 0.5, 0.5, 0.5
+		Rectangle:
+			pos: self.pos
+			size: self.size
+	drag_rectangle: self.x, self.y, self.width, self.height
+	drag_timeout: 10000000
+	drag_distance: 0
+	
 <Settings>:
 	name: 'settings'
 
@@ -59,13 +70,45 @@
 		TabbedPanelItem:
 			id: tab_sites
 			text: 'Sites'
-
-			canvas:
-				Rectangle:
 					
-			BoxLayout:
+			FloatLayout:
+
+		TabbedPanelItem:
+			id: tab_crop
+			text: 'Crop'
+			
+			FloatLayout:
+				canvas:
+					Color:
+						rgba: .5, .5, .5, 1
+					Rectangle:
+						pos: self.width / 2 - 180, self.height / 2 - 120
+						size: (360, 240)
 				Label:
-					text: 'Sites Tab'
+					text: 'Size'
+					bold: True
+					pos: -210, 100
+				Slider:
+					id: size_slider
+					orientation: 'vertical'
+					size_hint: None, None
+					height: 180
+					pos: -15, 50
+					range: (20, 240)
+					step: 1
+					value: app.crop_config['size']
+					on_value: app.update_config('Crop', 'size', self.value)
+				CropBox:
+					id: crop_box
+					size_hint: None, None
+					width: root.ids.size_slider.value
+					height: root.ids.size_slider.value
+					text: 'Drag Me'
+					on_pos:
+						app.update_config('Crop', 'center_x', self.x + self.width / 2)
+						print self.x + self.width / 2
+						app.update_config('Crop', 'center_y', self.y + self.height / 2)
+						print self.y + self.height / 2
 
 		TabbedPanelItem:
 			id: tab_grip
@@ -73,7 +116,6 @@
 			BoxLayout:
 				BoxLayout:
 					id: gripper_a
-					name: 'GripperA'
 					orientation: 'vertical'
 
 					Label:
@@ -86,10 +128,10 @@
 							text: 'Closed'
 						SettingsSlider:
 							name: 'closed'
-							min: app.gripper_b[self.name] - 20
-							max: app.gripper_b[self.name] + 20
-							value: app.gripper_b[self.name]
-							on_value: app.update_settings(self.parent.parent.name, self.name, self.value)
+							min: app.grip_a_config[self.name] - 20
+							max: app.grip_a_config[self.name] + 20
+							value: app.grip_a_config[self.name]
+							on_value: app.update_config('GripA', self.name, self.value)
 
 					BoxLayout:
 						orientation: 'horizontal'
@@ -97,10 +139,10 @@
 							text: 'Open'
 						SettingsSlider:
 							name: 'open'
-							min: app.gripper_b[self.name] - 20
-							max: app.gripper_b[self.name] + 20
-							value: app.gripper_b[self.name]
-							on_value: app.update_settings(self.parent.parent.name, self.name, self.value)
+							min: app.grip_a_config[self.name] - 20
+							max: app.grip_a_config[self.name] + 20
+							value: app.grip_a_config[self.name]
+							on_value: app.update_config('GripA', self.name, self.value)
 
 					BoxLayout:
 						orientation: 'horizontal'
@@ -108,10 +150,10 @@
 							text: 'Load'
 						SettingsSlider:
 							name: 'load'
-							min: app.gripper_b[self.name] - 20
-							max: app.gripper_b[self.name] + 20
-							value: app.gripper_b[self.name]
-							on_value: app.update_settings(self.parent.parent.name, self.name, self.value)
+							min: app.grip_a_config[self.name] - 20
+							max: app.grip_a_config[self.name] + 20
+							value: app.grip_a_config[self.name]
+							on_value: app.update_config('GripA', self.name, self.value)
 
 					BoxLayout:
 						orientation: 'horizontal'
@@ -119,10 +161,10 @@
 							text: 'Pos:  0'
 						SettingsSlider:
 							name: 'pos0'
-							min: app.gripper_b[self.name] - 20
-							max: app.gripper_b[self.name] + 20
-							value: app.gripper_b[self.name]
-							on_value: app.update_settings(self.parent.parent.name, self.name, self.value)
+							min: app.twist_a_config[self.name] - 20
+							max: app.twist_a_config[self.name] + 20
+							value: app.twist_a_config[self.name]
+							on_value: app.update_config('TwistA', self.name, self.value)
 
 					BoxLayout:
 						orientation: 'horizontal'
@@ -130,10 +172,10 @@
 							text: 'Pos: 90'
 						SettingsSlider:
 							name: 'pos90'
-							min: app.gripper_b[self.name] - 20
-							max: app.gripper_b[self.name] + 20
-							value: app.gripper_b[self.name]
-							on_value: app.update_settings(self.parent.parent.name, self.name, self.value)
+							min: app.twist_a_config[self.name] - 20
+							max: app.twist_a_config[self.name] + 20
+							value: app.twist_a_config[self.name]
+							on_value: app.update_config('TwistA', self.name, self.value)
 
 					BoxLayout:
 						orientation: 'horizontal'
@@ -141,10 +183,10 @@
 							text: 'Pos:180'
 						SettingsSlider:
 							name: 'pos180'
-							min: app.gripper_b[self.name] - 20
-							max: app.gripper_b[self.name] + 20
-							value: app.gripper_b[self.name]
-							on_value: app.update_settings(self.parent.parent.name, self.name, self.value)
+							min: app.twist_a_config[self.name] - 20
+							max: app.twist_a_config[self.name] + 20
+							value: app.twist_a_config[self.name]
+							on_value: app.update_config('TwistA', self.name, self.value)
 
 					BoxLayout:
 						orientation: 'horizontal'
@@ -152,13 +194,13 @@
 							text: 'Pos:270'
 						SettingsSlider:
 							name: 'pos270'
-							min: app.gripper_b[self.name] - 20
-							max: app.gripper_b[self.name] + 20
-							value: app.gripper_b[self.name]
-							on_value: app.update_settings(self.parent.parent.name, self.name, self.value)
+							min: app.twist_a_config[self.name] - 20
+							max: app.twist_a_config[self.name] + 20
+							value: app.twist_a_config[self.name]
+							on_value: app.update_config('TwistA', self.name, self.value)
 
 				BoxLayout:
-					name: 'GripperB'
+					id: gripper_b
 					orientation: 'vertical'
 
 					Label:
@@ -171,10 +213,10 @@
 							text: 'Closed'
 						SettingsSlider:
 							name: 'closed'
-							min: app.gripper_b[self.name] - 20
-							max: app.gripper_b[self.name] + 20
-							value: app.gripper_b[self.name]
-							on_value: app.update_settings(self.parent.parent.name, self.name, self.value)
+							min: app.grip_b_config[self.name] - 20
+							max: app.grip_b_config[self.name] + 20
+							value: app.grip_b_config[self.name]
+							on_value: app.update_config('GripB', self.name, self.value)
 
 					BoxLayout:
 						orientation: 'horizontal'
@@ -182,10 +224,10 @@
 							text: 'Open'
 						SettingsSlider:
 							name: 'open'
-							min: app.gripper_b[self.name] - 20
-							max: app.gripper_b[self.name] + 20
-							value: app.gripper_b[self.name]
-							on_value: app.update_settings(self.parent.parent.name, self.name, self.value)
+							min: app.grip_b_config[self.name] - 20
+							max: app.grip_b_config[self.name] + 20
+							value: app.grip_b_config[self.name]
+							on_value: app.update_config('GripB', self.name, self.value)
 
 					BoxLayout:
 						orientation: 'horizontal'
@@ -193,10 +235,10 @@
 							text: 'Load'
 						SettingsSlider:
 							name: 'load'
-							min: app.gripper_b[self.name] - 20
-							max: app.gripper_b[self.name] + 20
-							value: app.gripper_b[self.name]
-							on_value: app.update_settings(self.parent.parent.name, self.name, self.value)
+							min: app.grip_b_config[self.name] - 20
+							max: app.grip_b_config[self.name] + 20
+							value: app.grip_b_config[self.name]
+							on_value: app.update_config('GripB', self.name, self.value)
 
 					BoxLayout:
 						orientation: 'horizontal'
@@ -204,10 +246,10 @@
 							text: 'Pos:  0'
 						SettingsSlider:
 							name: 'pos0'
-							min: app.gripper_b[self.name] - 20
-							max: app.gripper_b[self.name] + 20
-							value: app.gripper_b[self.name]
-							on_value: app.update_settings(self.parent.parent.name, self.name, self.value)
+							min: app.twist_b_config[self.name] - 20
+							max: app.twist_b_config[self.name] + 20
+							value: app.twist_b_config[self.name]
+							on_value: app.update_config('TwistB', self.name, self.value)
 
 					BoxLayout:
 						orientation: 'horizontal'
@@ -215,10 +257,10 @@
 							text: 'Pos: 90'
 						SettingsSlider:
 							name: 'pos90'
-							min: app.gripper_b[self.name] - 20
-							max: app.gripper_b[self.name] + 20
-							value: app.gripper_b[self.name]
-							on_value: app.update_settings(self.parent.parent.name, self.name, self.value)
+							min: app.twist_b_config[self.name] - 20
+							max: app.twist_b_config[self.name] + 20
+							value: app.twist_b_config[self.name]
+							on_value: app.update_config('TwistB', self.name, self.value)
 
 					BoxLayout:
 						orientation: 'horizontal'
@@ -226,10 +268,10 @@
 							text: 'Pos:180'
 						SettingsSlider:
 							name: 'pos180'
-							min: app.gripper_b[self.name] - 20
-							max: app.gripper_b[self.name] + 20
-							value: app.gripper_b[self.name]
-							on_value: app.update_settings(self.parent.parent.name, self.name, self.value)
+							min: app.twist_b_config[self.name] - 20
+							max: app.twist_b_config[self.name] + 20
+							value: app.twist_b_config[self.name]
+							on_value: app.update_config('TwistB', self.name, self.value)
 
 					BoxLayout:
 						orientation: 'horizontal'
@@ -237,10 +279,10 @@
 							text: 'Pos:270'
 						SettingsSlider:
 							name: 'pos270'
-							min: app.gripper_b[self.name] - 20
-							max: app.gripper_b[self.name] + 20
-							value: app.gripper_b[self.name]
-							on_value: app.update_settings(self.parent.parent.name, self.name, self.value)
+							min: app.twist_b_config[self.name] - 20
+							max: app.twist_b_config[self.name] + 20
+							value: app.twist_b_config[self.name]
+							on_value: app.update_config('TwistB', self.name, self.value)
 
 		TabbedPanelItem:
 			id: tab_test
@@ -248,3 +290,16 @@
 			BoxLayout:
 				Label:
 					text: 'Test Tab'
+		
+		TabbedPanelItem:
+			id: tab_exit
+			text: 'Exit'
+			FloatLayout:
+				Button:
+					text: 'Back To Main'
+					size_hint: None, None
+					pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+					size: 140, 50
+					font_size: 18
+					bold: True
+					on_release: app.exit_config()
