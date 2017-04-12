@@ -5,8 +5,9 @@ from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.slider import Slider
 from kivy.uix.label import Label
+from kivy.graphics import *
 #from kivy.uix.button import Button
-#from kivy.uix.image import Image
+from kivy.uix.image import Image as KvImage
 #from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.behaviors import DragBehavior
 from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition, NoTransition
@@ -19,8 +20,7 @@ Config.set('graphics', 'height', '320')
 CONFIGFILE = 'calibrate.txt'
 config = ConfigParser.ConfigParser()
 
-class SettingsSlider(Slider):
-	pass
+IMG_SIZE = {'x': 320, 'y': 240} # side of image to capture from camera
 
 class RubikSolver(BoxLayout):
 	pass
@@ -29,12 +29,16 @@ class MainMenu(Screen):
 	pass
 
 class Settings(Screen):
-	pass
+	def on_pre_enter(self):
+		# TODO change this to get actual image from camera
+		self.im = KvImage(size=(IMG_SIZE['x'], IMG_SIZE['y']), source='testimg\\uface.jpg')
+		self.ids.crop_float.add_widget(self.im, 5)
 
 class CropBox(DragBehavior, Label):
 	pass
 
 class RubikSolverApp(App):
+
 	grip_a_config = {}
 	grip_b_config = {}
 	twist_a_config = {}
@@ -43,6 +47,9 @@ class RubikSolverApp(App):
 
 	def build(self):
 		self.get_config()
+		
+		self.imgx = IMG_SIZE['x']
+		self.imgy = IMG_SIZE['y']
 
 		self.sm = ScreenManager()
 		self.sm.add_widget(MainMenu(name='home'))
