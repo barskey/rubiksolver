@@ -11,10 +11,10 @@ from kivy.uix.image import Image as KvImage
 #from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.behaviors import DragBehavior
 from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition, NoTransition
-from kivy.properties import ObjectProperty
 
 import ConfigParser
 from PIL import Image as PILImage
+import time
 
 Config.set('graphics', 'width', '480')
 Config.set('graphics', 'height', '320')
@@ -26,25 +26,48 @@ SCREEN_SIZE_X = 480 # hard coded for convenience
 SCREEN_SIZE_Y = 320 # hard coded for convenience
 IMG_SIZE_X = 320 # size of image in x to capture from camera
 IMG_SIZE_Y = 240 # side of image in y to capture from camera
+TAB_SIZE = 48 # hard coded for height of tab header plus 4-pixel border on both sides
 
 class RubikSolver(BoxLayout):
 	pass
 
 class MainMenu(Screen):
 	pass
+		
+class DragBox(DragBehavior, Label):
+	pass
+
+class SiteBox(DragBehavior, Label):
+	
+	def on_pos(self, *args):
+		app = App.get_running_app()
+		app.update_config('Sites', self.id + '_x', app.get_PIL_pos(self.x, 'x', self.width, app.crop_config['size']))
+		app.update_config('Sites', self.id + '_y', app.get_PIL_pos(self.y, 'y', self.width, app.crop_config['size']))
+		print self.id
 
 class Settings(Screen):
+	kim_crop = None
+	kim_sites = None
 	
 	def add_crop_img(self):
-		# TODO change this to get actual image from camera
-		kim = KvImage(size=(IMG_SIZE_X, IMG_SIZE_Y), source='testimg\\uface.jpg')
+		if self.kim_crop:
+			self.ids.crop_float.remove_widget(self.kim_crop) # remove existing image if it exists
 		
-		self.ids.crop_float.add_widget(kim, 1)
+		# TODO change this to get actual image from camera
+		self.kim_crop = KvImage(size=(IMG_SIZE_X, IMG_SIZE_Y), source='testimg\\uface.jpg')
+		
+		self.ids.crop_float.add_widget(self.kim_crop, 1)
 		
 	def add_sites_img(self):
+		if self.kim_sites:
+			self.ids.sites_float.remove_widget(self.kim_sites) # remove existing image if it exists
+		
 		# TODO change this to get actual image from camera
 		# load/grab image
-		pim = PILImage.open('testimg\\uface.jpg')
+		pil = PILImage.open('testimg\\uface.jpg')
+		
+		# flip the image vertically so the y coords are bottom-up for kivy instead of top-down for PIL
+		flip = pil.transpose(PILImage.FLIP_TOP_BOTTOM)
 		
 		# crop image and save to temp file (0,0 is in upper-left)
 		size = App.get_running_app().crop_config['size']
@@ -54,16 +77,39 @@ class Settings(Screen):
 		t = center_y - size / 2
 		r = l + size
 		b = t + size
-		tmp_img = pim.crop((l, t, r, b))
+		tmp = flip.crop((l, t, r, b))
+
+		# flip it back
+		tmp_img = tmp.transpose(PILImage.FLIP_TOP_BOTTOM)
 		
 		tmp_img.save('tmp.jpg', "JPEG") # TODO should this extension be hard coded?
+		time.sleep(1) # DEBUG give it time to save the image
 		
-		kim = KvImage(size=(size, size), source='tmp.jpg')
+		self.kim_sites = KvImage(size=(size, size), source='tmp.jpg')
 		
-		self.ids.sites_float.add_widget(kim)
+		if self.kim_sites:
+			self.ids.sites_float.add_widget(self.kim_sites)
+			
+	def add_sites_boxes(self):
 
-class DragBox(DragBehavior, Label):
-	pass
+		app = App.get_running_app()
+		site_config = app.site_config
+		size = site_config['size']
+
+		for i in xrange(1, 10):
+			site_name = 'center' + str(i)
+			
+			x = app.get_screen_pos(site_config[site_name]['x'], 'x', size, app.crop_config['size'])
+			y = app.get_screen_pos(site_config[site_name]['y'], 'y', size, app.crop_config['size'])
+			
+			box = SiteBox(id=site_name)
+			
+			self.ids.sites_float.add_widget(box)
+
+			box.width = size
+			box.height = size
+			box.pos = (x, y)
+			box.name = site_name
 
 class RubikSolverApp(App):
 
@@ -137,28 +183,34 @@ class RubikSolverApp(App):
 		self.go_screen('home', 'left')
 	
 	"""
-	transposes local coord from center to ll corner, then transposes to screen coords
-	0,0 in ll of screen
+	transposes PIL coord from center to ll corner, then to screen coords
+	return wrt 0,0 in ll of screen
 	"""
-	def get_global_pos(self, coord, dir, size):
+	def get_screen_pos(self, coord, dir, box_size, img_size):
 		if dir == 'x':
-			ll_x = coord - size / 2
-			return (ll_x + ((SCREEN_SIZE_X - size) / 2))
+			ll_x = coord - box_size / 2 # move coord to ll corner in x
+			offset_x = ll_x + (SCREEN_SIZE_X - img_size) / 2 # add to account for screen space to left of img
+			return offset_x
 		elif dir == 'y':
-			ll_y = coord - size / 2
-			return (ll_y + ((SCREEN_SIZE_Y - size) / 2))
+			ll_y = coord + box_size / 2 # move coord to ll corner in y
+			transpose_y = img_size - ll_y # flip the coord so we are in bot-top for screen coords
+			offset_y = transpose_y + (SCREEN_SIZE_Y - TAB_SIZE - img_size) / 2 # add screen space below img
+			return offset_y
 	
 	"""
-	transposes global coord from ll corner to center, then transposes to local coords
-	0,0 in ll of screen
+	transposes screen coord from ll corner to center, then to PIL coords
+	return wrt 0,0 in ul of screen
 	"""
-	def get_local_pos(self, coord, dir, size):
+	def get_PIL_pos(self, coord, dir, box_size, img_size):
 		if dir == 'x':
-			center_x = coord + size / 2
-			return (center_x - ((SCREEN_SIZE_X - size) / 2))
+			center_x = coord + box_size / 2 # center the coord
+			offset_x = center_x - (SCREEN_SIZE_X - img_size) / 2 # subtract screen space to left of img
+			return offset_x
 		elif dir == 'y':
-			center_y = coord + size / 2
-			return (center_y - ((SCREEN_SIZE_Y - size) / 2))
-	
+			center_y = coord + box_size / 2 # center the coord
+			offset_y = center_y - (SCREEN_SIZE_Y - TAB_SIZE- img_size) / 2 # subtract screen space below img
+			transpose_y = img_size - offset_y # flip the coord so we are in top-bot for PIL coords
+			return transpose_y
+				
 if __name__ == '__main__':
 	RubikSolverApp().run()

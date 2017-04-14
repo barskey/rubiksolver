@@ -56,6 +56,19 @@
 	drag_rectangle: self.x, self.y, self.width, self.height
 	drag_timeout: 10000000
 	drag_distance: 0
+	size_hint: None, None
+
+<SiteBox>:
+	canvas:
+		Color:
+			rgba: 1, 1, 1, 0.5
+		Rectangle:
+			pos: self.pos
+			size: self.size
+	drag_rectangle: self.x, self.y, self.width, self.height
+	drag_timeout: 10000000
+	drag_distance: 0
+	size_hint: None, None
 
 <Settings>:
 	name: 'settings'
@@ -76,7 +89,9 @@
 			id: tab_sites
 			text: 'Sites'
 			
-			on_release: root.add_sites_img()
+			on_release:
+				root.add_sites_img()
+				root.add_sites_boxes()
 					
 			FloatLayout:
 				id: sites_float
@@ -119,14 +134,15 @@
 					on_value: app.update_config('Crop', 'size', self.value)
 				DragBox:
 					id: crop_box
-					size_hint: None, None
-					pos: app.get_global_pos(app.crop_config['center_x'], 'x', crop_slider.value), app.get_global_pos(app.crop_config['center_y'], 'y', crop_slider.value)
 					width: crop_slider.value
 					height: crop_slider.value
+					pos: app.get_screen_pos(app.crop_config['center_x'], 'x', crop_slider.value, app.imgx), app.get_screen_pos(app.crop_config['center_y'], 'y', crop_slider.value, app.imgy)
 					text: '+'
 					on_pos:
-						app.update_config('Crop', 'center_x', app.get_local_pos(self.x, 'x', crop_slider.value))
-						app.update_config('Crop', 'center_y', app.get_local_pos(self.y, 'y', crop_slider.value))
+						print 'before:', self.x, ',', self.y
+						app.update_config('Crop', 'center_x', app.get_PIL_pos(self.x, 'x', crop_slider.value, app.imgx))
+						app.update_config('Crop', 'center_y', app.get_PIL_pos(self.y, 'y', crop_slider.value, app.imgy))
+						print 'after:', app.get_PIL_pos(self.x, 'x', crop_slider.value, app.imgx), ',', app.get_PIL_pos(self.y, 'y', crop_slider.value, app.imgy)
 
 		TabbedPanelItem:
 			id: tab_grip
