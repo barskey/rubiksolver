@@ -33,42 +33,41 @@ class RubikSolver(BoxLayout):
 
 class MainMenu(Screen):
 	pass
-		
+
 class DragBox(DragBehavior, Label):
 	pass
 
 class SiteBox(DragBehavior, Label):
-	
+
 	def on_pos(self, *args):
 		app = App.get_running_app()
 		app.update_config('Sites', self.id + '_x', app.get_PIL_pos(self.x, 'x', self.width, app.crop_config['size']))
 		app.update_config('Sites', self.id + '_y', app.get_PIL_pos(self.y, 'y', self.width, app.crop_config['size']))
-		print self.id
 
 class Settings(Screen):
 	kim_crop = None
 	kim_sites = None
-	
+
 	def add_crop_img(self):
 		if self.kim_crop:
 			self.ids.crop_float.remove_widget(self.kim_crop) # remove existing image if it exists
-		
+
 		# TODO change this to get actual image from camera
-		self.kim_crop = KvImage(size=(IMG_SIZE_X, IMG_SIZE_Y), source='testimg\\uface.jpg')
-		
+		self.kim_crop = KvImage(size=(IMG_SIZE_X, IMG_SIZE_Y), source='testimg/uface.jpg')
+
 		self.ids.crop_float.add_widget(self.kim_crop, 1)
-		
+
 	def add_sites_img(self):
 		if self.kim_sites:
 			self.ids.sites_float.remove_widget(self.kim_sites) # remove existing image if it exists
-		
+
 		# TODO change this to get actual image from camera
 		# load/grab image
-		pil = PILImage.open('testimg\\uface.jpg')
-		
+		pil = PILImage.open('testimg/uface.jpg')
+
 		# flip the image vertically so the y coords are bottom-up for kivy instead of top-down for PIL
 		flip = pil.transpose(PILImage.FLIP_TOP_BOTTOM)
-		
+
 		# crop image and save to temp file (0,0 is in upper-left)
 		size = App.get_running_app().crop_config['size']
 		center_x = App.get_running_app().crop_config['center_x']
@@ -81,15 +80,15 @@ class Settings(Screen):
 
 		# flip it back
 		tmp_img = tmp.transpose(PILImage.FLIP_TOP_BOTTOM)
-		
+
 		tmp_img.save('tmp.jpg', "JPEG") # TODO should this extension be hard coded?
 		time.sleep(1) # DEBUG give it time to save the image
-		
+
 		self.kim_sites = KvImage(size=(size, size), source='tmp.jpg')
-		
+
 		if self.kim_sites:
 			self.ids.sites_float.add_widget(self.kim_sites)
-			
+
 	def add_sites_boxes(self):
 
 		app = App.get_running_app()
@@ -98,16 +97,16 @@ class Settings(Screen):
 
 		for i in xrange(1, 10):
 			site_name = 'center' + str(i)
-			
+
 			x = app.get_screen_pos(site_config[site_name]['x'], 'x', size, app.crop_config['size'])
 			y = app.get_screen_pos(site_config[site_name]['y'], 'y', size, app.crop_config['size'])
-			
+
 			box = SiteBox(id=site_name)
-			
+
 			self.ids.sites_float.add_widget(box)
 
-			box.width = size
-			box.height = size
+			box.width = self.ids.site_slider.value
+			box.height = self.ids.site_slider.value
 			box.pos = (x, y)
 			box.name = site_name
 
@@ -122,7 +121,7 @@ class RubikSolverApp(App):
 
 	def build(self):
 		self.get_config()
-		
+
 		self.imgx = IMG_SIZE_X
 		self.imgy = IMG_SIZE_Y
 
@@ -132,7 +131,7 @@ class RubikSolverApp(App):
 
 		rs = RubikSolver()
 		rs.add_widget(self.sm)
-		
+
 		Window.size = (SCREEN_SIZE_X, SCREEN_SIZE_Y) # debug for Windows/Mac
 
 		return rs
@@ -147,10 +146,10 @@ class RubikSolverApp(App):
 
 	def get_config(self):
 		config.read(CONFIGFILE)
-		
+
 		for option in config.options('Crop'):
 			self.crop_config[option] = config.getint('Crop', option)
-			
+
 		for option in config.options('GripA'):
 			self.grip_a_config[option] = config.getint('GripA', option)
 
@@ -162,8 +161,9 @@ class RubikSolverApp(App):
 
 		for option in config.options('TwistB'):
 			self.twist_b_config[option] = config.getint('TwistB', option)
-		
+
 		self.site_config['size'] = config.getint('Sites', 'size')
+
 		for i in xrange(1, 10):
 			configname_x = 'center' + str(i) + '_x'
 			configname_y = 'center' + str(i) + '_y'
@@ -178,10 +178,10 @@ class RubikSolverApp(App):
 		with open(CONFIGFILE, 'wb') as configfile:
 			config.write(configfile)
 		self.get_config()
-	
+
 	def exit_config(self):
 		self.go_screen('home', 'left')
-	
+
 	"""
 	transposes PIL coord from center to ll corner, then to screen coords
 	return wrt 0,0 in ll of screen
@@ -196,7 +196,7 @@ class RubikSolverApp(App):
 			transpose_y = img_size - ll_y # flip the coord so we are in bot-top for screen coords
 			offset_y = transpose_y + (SCREEN_SIZE_Y - TAB_SIZE - img_size) / 2 # add screen space below img
 			return offset_y
-	
+
 	"""
 	transposes screen coord from ll corner to center, then to PIL coords
 	return wrt 0,0 in ul of screen
@@ -211,6 +211,6 @@ class RubikSolverApp(App):
 			offset_y = center_y - (SCREEN_SIZE_Y - TAB_SIZE- img_size) / 2 # subtract screen space below img
 			transpose_y = img_size - offset_y # flip the coord so we are in top-bot for PIL coords
 			return transpose_y
-				
+
 if __name__ == '__main__':
 	RubikSolverApp().run()

@@ -84,15 +84,15 @@
 			BoxLayout:
 				Label:
 					text: 'Manual Tab'
-		
+
 		TabbedPanelItem:
 			id: tab_sites
 			text: 'Sites'
-			
+
 			on_release:
 				root.add_sites_img()
 				root.add_sites_boxes()
-					
+
 			FloatLayout:
 				id: sites_float
 				Label:
@@ -113,7 +113,7 @@
 		TabbedPanelItem:
 			id: tab_crop
 			text: 'Crop'
-			
+
 			on_release: root.add_crop_img()
 
 			FloatLayout:
