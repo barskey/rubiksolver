@@ -12,6 +12,7 @@ from kivy.uix.image import Image as KvImage
 from kivy.uix.behaviors import DragBehavior
 from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition, NoTransition
 
+import rscube
 import ConfigParser
 from PIL import Image as PILImage
 import time
@@ -53,7 +54,7 @@ class Settings(Screen):
 			self.ids.crop_float.remove_widget(self.kim_crop) # remove existing image if it exists
 
 		# TODO change this to get actual image from camera
-		self.kim_crop = KvImage(size=(IMG_SIZE_X, IMG_SIZE_Y), source='testimg/uface.jpg')
+		self.kim_crop = KvImage(size=(IMG_SIZE_X, IMG_SIZE_Y), source='testimg\\uface.jpg')
 
 		self.ids.crop_float.add_widget(self.kim_crop, 1)
 
@@ -63,7 +64,7 @@ class Settings(Screen):
 
 		# TODO change this to get actual image from camera
 		# load/grab image
-		pil = PILImage.open('testimg/uface.jpg')
+		pil = PILImage.open('testimg\\uface.jpg')
 
 		# flip the image vertically so the y coords are bottom-up for kivy instead of top-down for PIL
 		flip = pil.transpose(PILImage.FLIP_TOP_BOTTOM)
@@ -82,7 +83,7 @@ class Settings(Screen):
 		tmp_img = tmp.transpose(PILImage.FLIP_TOP_BOTTOM)
 
 		tmp_img.save('tmp.jpg', "JPEG") # TODO should this extension be hard coded?
-		time.sleep(1) # DEBUG give it time to save the image
+		time.sleep(0.5) # DEBUG give it time to save the image
 
 		self.kim_sites = KvImage(size=(size, size), source='tmp.jpg')
 
@@ -122,6 +123,8 @@ class RubikSolverApp(App):
 	def build(self):
 		self.get_config()
 
+		self.mycube = rscube.MyCube(self.site_config, self.crop_config, self.grip_a_config, self.twist_a_config, self.grip_b_config, self.twist_b_config)
+
 		self.imgx = IMG_SIZE_X
 		self.imgy = IMG_SIZE_Y
 
@@ -133,6 +136,7 @@ class RubikSolverApp(App):
 		rs.add_widget(self.sm)
 
 		Window.size = (SCREEN_SIZE_X, SCREEN_SIZE_Y) # debug for Windows/Mac
+		
 
 		return rs
 
@@ -211,6 +215,15 @@ class RubikSolverApp(App):
 			offset_y = center_y - (SCREEN_SIZE_Y - TAB_SIZE- img_size) / 2 # subtract screen space below img
 			transpose_y = img_size - offset_y # flip the coord so we are in top-bot for PIL coords
 			return transpose_y
+	
+	def move_cube(self, gripper, op, val):
+		if gripper is not None:
+			if op == 'grip':
+				self.mycube.grip(gripper, val)
+			elif op == 'twist':
+				self.mycube.twist(gripper, val)
+		else:
+			return self.mycube.move_face_for_twist(val)
 
 if __name__ == '__main__':
 	RubikSolverApp().run()
