@@ -105,7 +105,7 @@ testimages = [
 	'testimg/bface.jpg'
 ]
 
-class MyCube(object):
+class MyCube():
 
 	def __init__(self, sites, crop, grip_a, twist_a, grip_b, twist_b):
 		self.__raw_colors = [[None for i in range(9)] for j in range(6)] # luminance for each raw color found on cube
@@ -139,7 +139,7 @@ class MyCube(object):
 	
 	@site_rects.setter
 	def site_rects(self, config_sites):
-		self.__site_rects = [None for i in xrange(9)]
+		self.__site_rects = [None for i in range(9)]
 		for i in xrange(9):
 			site = 'center' + str(i + 1)
 			l = config_sites[site]['x'] - config_sites['size'] / 2
@@ -211,14 +211,11 @@ class MyCube(object):
 		self.__orientation = 'FDB'
 		self.process_face()
 
-	def scan_face(self):
+	def process_face(self):
 		'''
 		Gets image from camera, rotates as necessary, gets average (mean) colors
-		in each region, and stores in __raw_colors
-		Returns list of colors on this face for uix
+		in each region with probability, and stores in raw_colors
 		'''
-		logo_threshold = 8
-		
 		face = FACES[self.__orientation[0]]
 		rot = UP_FACE_ROT[self.__orientation]
 		
@@ -226,7 +223,7 @@ class MyCube(object):
 		face_im = Image.open(testimages[face]) # TODO get camera instead of test images
 
 		# crop the image to square
-		img = face_im.crop(self.crop_rect)
+		img = face_im.crop(self.__crop_rect)
 
 		# rotate image as necessary so colors are records in correct order
 		img = img.rotate(-rot)
@@ -237,12 +234,53 @@ class MyCube(object):
 		# loop through each site and store its raw color
 		for i in xrange(9):
 			site = img.crop(self.__site_rects[i])
-			# if the site has many colors, it must be a logo. Skip it and handle manually
-			if ImageStat.Stat(site).stddev[0] < logo_threshold and ImageStat.Stat(site).stddev[1] < logo_threshold and ImageStat.Stat(site).stddev[2] < logo_threshold:
+			# if the site has many colors, it must be a logo. Skip it and handle at the end
+			if ImageStat.Stat(site).stddev[0] > 10 and ImageStat.Stat(site).stddev[1] > 10 and ImageStat.Stat(site).stddev[2] > 10:
+				print 'face: %s site: %s' % (face, i)
+				self.__logo_site = (face, i)
+			else:
 				self.__raw_colors[face][i] = ImageStat.Stat(site).mean
-		
-		return self.__raw_colors[face]
 
+	def guess_colors(self):
+		'''
+		Loops through raw_colors and tries to identify and assign face colors
+		'''
+
+		# start by assigning the center color[4] to the face_colors list.
+		for face, colors in enumerate(self.__raw_colors):
+			if colors[4]: # Only save if there is a color in the center site. Skip if it is none - must be logo site
+				self.__face_colors[face] = colors[4]
+
+		# If there is a logo site, check the remaining face_colors for a missing one
+		missing_face = None
+		if self.__logo_site:
+			missing_face = self.__face_colors.index(None)
+		print FACES_STR[missing_face] # Debug
+
+		# check every site on the cube for a good match for the missing color
+		for face, colors in enumerate(self.__raw_colors): # for each face on the cube
+			for site, color in enumerate(colors): # for each color on this face
+				# compare to each color in the colors list to check for a close enough match
+				try_color = []
+				for face_color in self.__face_colors:
+					if face_color is not None and color is not None:
+						if not self.is_similar(color, face_color, THRESHOLD):
+							try_color.append(color)
+		print try_color
+		if missing_face:
+			self.__face_colors[missing_face] = try_color[0]
+
+		# then check if each color is within a certain tolerance of face colors for assignment
+		for face, colors in enumerate(self.__raw_colors): # for each face on the cube
+			for site, color in enumerate(colors): # for each color on this face
+				# compare to each color in the colors list to check for a close enough match
+				match = False
+				for face_color in self.__face_colors:
+					if self.is_similar(color, face_color, THRESHOLD):
+						self.__norm_colors[face][site] = FACES_STR[face]
+						match = True
+				if not match:
+					print 'Could not find a match for face: %s, site: %s, lum: %s' % (face, site, color)
 	def get_solve_string(self):
 		'''
 		Gets the solve string
@@ -296,18 +334,17 @@ class MyCube(object):
 		'''
 		print 'Twist gripper', gripper, dir
 		
-	def move_face_for_twist(self, face_to_move, to_gripper = None):
+	def move_face_for_twist(self, face_to_move):
 		'''
-		Decides which gripper to move face to, based on the fewest moves.
-		Moves face to chosen gripper, and updates cube orientation.
-		If gripper passed as arg will move face to that gripper.
+		Decides which gripper to move face to, based on the fewest moves
+		Moves face to chosen gripper, and updates cube orientation
 		Returns chosen gripper
 		'''
 		moves = None
 		orientation = self.__orientation
+		gripper = None
 		
-		# get current position of face to move
-		face = FACE_POSITION[self.__orientation][FACES[face_to_move]]
+		face = FACES[face_to_move]
 		
 		moves_a = MOVES_TO_A[face].split(',')
 		if moves_a[0] == '':
@@ -315,37 +352,32 @@ class MyCube(object):
 		moves_b = MOVES_TO_B[face].split(',')
 		if moves_b[0] == '':
 			moves_b = []
-
-		if to_gripper == 'A':
+		print moves_a, moves_b
+		# pick the least number of moves
+		if len(moves_a) <= len(moves_b): # move face to gripper A
 			moves = moves_a
 			orientation = NEW_ORIENTATION_A[face]
-		elif to_gripper == 'B':
+			gripper = 'A'
+		else: # move face to gripper b
 			moves = moves_b
 			orientation = NEW_ORIENTATION_B[face]
-		else: # pick the least number of moves
-			if len(moves_a) <= len(moves_b): # move face to gripper A
-				moves = moves_a
-				orientation = NEW_ORIENTATION_A[face]
-				to_gripper = 'A'
-			else: # move face to gripper b
-				moves = moves_b
-				orientation = NEW_ORIENTATION_B[face]
-				to_gripper = 'B'
+			gripper = 'B'
 			
 		for move in moves:
-			gripper_to_move = move[0]
+			gripper = move[0]
 			cmd = move[1]
 			if cmd == '+' or cmd == '-': # if it's a twist command
-				self.twist(gripper_to_move, cmd)
+				self.twist(gripper, cmd)
 			else: # it must be a grip command
-				self.grip(gripper_to_move, cmd)
+				self.grip(gripper, cmd)
 		
 		self.__orientation = orientation
 		
-		return to_gripper
+		return gripper
 		
-def luminance(pixel):
-	return (0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2])
+	
+	def luminance(pixel):
+		return (0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2])
 
-def is_similar(a, b, threshold):
-	return abs(luminance(a) - luminance(b)) < threshold
+	def is_similar(a, b, threshold):
+		return abs(self.luminance(a) - self.luminance(b)) < threshold

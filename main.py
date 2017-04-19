@@ -6,11 +6,16 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.slider import Slider
 from kivy.uix.label import Label
 from kivy.graphics import *
+from kivy.properties import StringProperty
 #from kivy.uix.button import Button
 from kivy.uix.image import Image as KvImage
 #from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.behaviors import DragBehavior
 from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition, NoTransition
+
+from colormath.color_objects import sRGBColor, LabColor
+from colormath.color_conversions import convert_color
+from colormath.color_diff import delta_e_cie2000
 
 import rscube
 import ConfigParser
@@ -29,6 +34,16 @@ IMG_SIZE_X = 320 # size of image in x to capture from camera
 IMG_SIZE_Y = 240 # side of image in y to capture from camera
 TAB_SIZE = 48 # hard coded for height of tab header plus 4-pixel border on both sides
 
+# hard-coded instructions for optimizing face scanning
+SCANCUBE = [
+	('F', 'A'), # U is up
+	('U', 'B'), # D is up
+	('L', 'B'), # R is up
+	('R', 'B'), # L is up
+	('L', 'A'), # B is up
+	('B', 'B') # F is up
+]
+
 class RubikSolver(BoxLayout):
 	pass
 
@@ -42,55 +57,38 @@ class SiteBox(DragBehavior, Label):
 
 	def on_pos(self, *args):
 		app = App.get_running_app()
-		app.update_config('Sites', self.id + '_x', app.get_PIL_pos(self.x, 'x', self.width, app.crop_config['size']))
-		app.update_config('Sites', self.id + '_y', app.get_PIL_pos(self.y, 'y', self.width, app.crop_config['size']))
+		imgsize = app.crop_config['size']
+		size = app.site_config['size']
+		center = app.ll_to_center((self.x, self.y), (imgsize, imgsize), size, True)
+		app.update_config('Sites', self.id + '_x', center[0])
+		app.update_config('Sites', self.id + '_y', center[1])
 
+class Site(Label):
+	pass
+		
 class Settings(Screen):
 	kim_crop = None
 	kim_sites = None
 
 	def add_crop_img(self):
-		if self.kim_crop:
-			self.ids.crop_float.remove_widget(self.kim_crop) # remove existing image if it exists
 
 		# TODO change this to get actual image from camera
-		self.kim_crop = KvImage(size=(IMG_SIZE_X, IMG_SIZE_Y), source='testimg\\uface.jpg')
-
-		self.ids.crop_float.add_widget(self.kim_crop, 1)
+		img = self.ids.crop_img
+		img.source = 'testimg\\uface.jpg'
 
 	def add_sites_img(self):
-		if self.kim_sites:
-			self.ids.sites_float.remove_widget(self.kim_sites) # remove existing image if it exists
 
 		# TODO change this to get actual image from camera
 		# load/grab image
-		pil = PILImage.open('testimg\\uface.jpg')
-
-		# flip the image vertically so the y coords are bottom-up for kivy instead of top-down for PIL
-		flip = pil.transpose(PILImage.FLIP_TOP_BOTTOM)
-
-		# crop image and save to temp file (0,0 is in upper-left)
-		size = App.get_running_app().crop_config['size']
-		center_x = App.get_running_app().crop_config['center_x']
-		center_y = App.get_running_app().crop_config['center_y']
-		l = center_x - size / 2
-		t = center_y - size / 2
-		r = l + size
-		b = t + size
-		tmp = flip.crop((l, t, r, b))
-
-		# flip it back
-		tmp_img = tmp.transpose(PILImage.FLIP_TOP_BOTTOM)
-
-		tmp_img.save('tmp.jpg', "JPEG") # TODO should this extension be hard coded?
-		time.sleep(0.5) # DEBUG give it time to save the image
-
-		self.kim_sites = KvImage(size=(size, size), source='tmp.jpg')
-
-		if self.kim_sites:
-			self.ids.sites_float.add_widget(self.kim_sites)
+		img = self.ids.sites_img
+		img.source = 'tmp.jpg'
 
 	def add_sites_boxes(self):
+	
+		for widget in self.ids:
+			print widget
+			#if self.ids[widget].id.startswith ('center'):
+			#	self.remove_widget(widget)
 
 		app = App.get_running_app()
 		site_config = app.site_config
@@ -98,19 +96,50 @@ class Settings(Screen):
 
 		for i in xrange(1, 10):
 			site_name = 'center' + str(i)
-
-			x = app.get_screen_pos(site_config[site_name]['x'], 'x', size, app.crop_config['size'])
-			y = app.get_screen_pos(site_config[site_name]['y'], 'y', size, app.crop_config['size'])
-
 			box = SiteBox(id=site_name)
+			self.ids.sites_rel.add_widget(box)
 
-			self.ids.sites_float.add_widget(box)
+			pos = app.center_to_ll((site_config[site_name]['x'], site_config[site_name]['y']), (app.crop_config['size'], app.crop_config['size']), size, True)
 
-			box.width = self.ids.site_slider.value
-			box.height = self.ids.site_slider.value
-			box.pos = (x, y)
-			box.name = site_name
+			box.width = site_config['size']
+			box.height = site_config['size']
+			box.pos = pos
 
+class Scan(Screen):
+		
+	def on_enter(self):
+		#self.scan_cube()
+		pass
+	
+	def scan_cube(self):
+		app = App.get_running_app()
+		site_config = app.site_config
+		size = site_config['size']
+		cube = app.mycube
+
+		for tup in SCANCUBE:
+			face = tup[0]
+			to_gripper = tup[1]
+			cube.move_face_for_twist(face, to_gripper)
+			face_colors = cube.scan_face()
+			i = 1
+			for color in face_colors:
+				if color is None:
+					print 'No color, site: %s' % str(i)
+				else:
+					site_name = 'center' + str(i)
+
+					x = app.get_screen_pos(site_config[site_name]['x'], 'x', size, app.crop_config['size'])
+					y = app.get_screen_pos(site_config[site_name]['y'], 'y', size, app.crop_config['size'])
+					
+					site = Site(id=str(i))
+					self.ids.scan_float.add_widget(site)
+					site.width = size
+					site.height = size
+					site.pos = (x, y)
+					
+					i += 1
+			
 class RubikSolverApp(App):
 
 	grip_a_config = {}
@@ -119,6 +148,7 @@ class RubikSolverApp(App):
 	twist_b_config = {}
 	crop_config = {}
 	site_config = {}
+	colors = {}
 
 	def build(self):
 		self.get_config()
@@ -131,12 +161,12 @@ class RubikSolverApp(App):
 		self.sm = ScreenManager()
 		self.sm.add_widget(MainMenu(name='home'))
 		self.sm.add_widget(Settings(name='settings'))
+		self.sm.add_widget(Scan(name='scan'))
 
 		rs = RubikSolver()
 		rs.add_widget(self.sm)
 
 		Window.size = (SCREEN_SIZE_X, SCREEN_SIZE_Y) # debug for Windows/Mac
-		
 
 		return rs
 
@@ -174,6 +204,11 @@ class RubikSolverApp(App):
 			x = config.getint('Sites', configname_x)
 			y = config.getint('Sites', configname_y)
 			self.site_config['center' + str(i)] = {'x': x, 'y': y}
+		
+		for option in config.options('Colors'):
+			values = config.get('Colors', option).split(',')
+			color = (float(values[0]), float(values[1]), float(values[2]))
+			self.colors[option] = color
 
 	def update_config(self, setting, option, value):
 		# TODO move gripper
@@ -183,14 +218,31 @@ class RubikSolverApp(App):
 			config.write(configfile)
 		self.get_config()
 
-	def exit_config(self):
-		self.go_screen('home', 'left')
-
-	"""
-	transposes PIL coord from center to ll corner, then to screen coords
-	return wrt 0,0 in ll of screen
-	"""
+	def center_to_ll(self, center, img_size, size, flipy = False):
+		ll_x = center[0] - size / 2
+		ll_y = None
+		if flipy:
+			ll_y = center[1] + size / 2
+			ll_y = img_size[1] - ll_y
+		else:
+			ll_y = center[1] - size / 2
+		return (ll_x, ll_y)
+	
+	def ll_to_center(self, ll, img_size, size, flipy = False):
+		center_x = ll[0] + size / 2
+		center_y = None
+		if flipy:
+			center_y = ll[1] + size / 2
+			center_y = img_size[1] - center_y
+		else:
+			center_y = ll[1] - size / 2
+		return (center_x, center_y)
+	
 	def get_screen_pos(self, coord, dir, box_size, img_size):
+		'''
+		transposes PIL coord from center to ll corner, then to screen coords
+		return wrt 0,0 in ll of screen
+		'''
 		if dir == 'x':
 			ll_x = coord - box_size / 2 # move coord to ll corner in x
 			offset_x = ll_x + (SCREEN_SIZE_X - img_size) / 2 # add to account for screen space to left of img
@@ -201,11 +253,11 @@ class RubikSolverApp(App):
 			offset_y = transpose_y + (SCREEN_SIZE_Y - TAB_SIZE - img_size) / 2 # add screen space below img
 			return offset_y
 
-	"""
-	transposes screen coord from ll corner to center, then to PIL coords
-	return wrt 0,0 in ul of screen
-	"""
 	def get_PIL_pos(self, coord, dir, box_size, img_size):
+		'''
+		transposes screen coord from ll corner to center, then to PIL coords
+		return wrt 0,0 in ul of screen
+		'''
 		if dir == 'x':
 			center_x = coord + box_size / 2 # center the coord
 			offset_x = center_x - (SCREEN_SIZE_X - img_size) / 2 # subtract screen space to left of img
@@ -225,5 +277,13 @@ class RubikSolverApp(App):
 		else:
 			return self.mycube.move_face_for_twist(val)
 
+def crop_img(PILimg, center, size):
+	l = center[0] - size / 2
+	t = center[1] - size / 2
+	r = l + size
+	b = t + size
+	return PILimg.crop((l, t, r, b))
+
+			
 if __name__ == '__main__':
 	RubikSolverApp().run()

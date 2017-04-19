@@ -1,14 +1,14 @@
 [Crop]
-center_x = 158
-center_y = 121
-size = 178
+center_x = 157
+center_y = 123
+size = 180
 
 [Sites]
 size = 30
 center1_x = 34
 center1_y = 30
-center2_x = 93
-center2_y = 32
+center2_x = 99
+center2_y = 41
 center3_x = 151
 center3_y = 33
 center4_x = 34
@@ -45,4 +45,12 @@ pos0 = 0
 pos90 = 31
 pos180 = 60
 pos270 = 60
+
+[Colors]
+red = 255,0,0
+white = 255,255,255
+blue = 0,0,255
+yellow = 255,255,0
+green = 0,255,0
+orange = 255,128,0
 

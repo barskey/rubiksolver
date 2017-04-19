@@ -46,6 +46,22 @@
 			on_release:
 				app.go_screen('scan', 'None')
 
+<Scan>:
+	name: 'scan'
+	
+	RelativeLayout:
+		size_hint: None, None
+		size: app.crop_config['size'], app.crop_config['size']
+		pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+		canvas:
+			Color:
+				rgba: 1, 0, 0, 0.5
+			Rectangle:
+				size: self.size 
+		Site:
+			size: 30, 30
+			pos: 34, 30
+
 <DragBox>:
 	canvas:
 		Color:
@@ -70,6 +86,15 @@
 	drag_distance: 0
 	size_hint: None, None
 
+<Site>:
+	canvas:
+		Color:
+			rgba: 1, 1, 1, 0.5
+		Rectangle:
+			pos: self.pos
+			size: self.size
+	size_hint: None, None
+	
 <Settings>:
 	name: 'settings'
 
@@ -81,7 +106,9 @@
 		TabbedPanelItem:
 			id: tab_manual
 			text: 'Manual'
+			
 			BoxLayout:
+				padding: 20
 				BoxLayout:
 					orientation: 'vertical'
 					Label:
@@ -91,62 +118,31 @@
 						text: 'Up'
 						size_hint: (None, None)
 						size: (100, 40)
+						pos_hint: {'center_x': 0.5}
 						values: ('Up', 'Right', 'Front', 'Down', 'Left', 'Back')
 					BoxLayout:
 						Button:
 							size_hint: (None, None)
-							size: (100, 40)
+							size: (90, 40)
 							text: 'Twist CCW'
 							on_release:
-								print move_to_face.text[0]
 								gripper = app.move_cube(None, None, move_to_face.text[0])
 								app.move_cube(gripper, 'twist', '-')
 						Button:
 							size_hint: (None, None)
-							size: (100, 40)
+							size: (90, 40)
 							text: 'Twist CW'
 							on_release:
-								print move_to_face.text[0]
 								gripper = app.move_cube(None, None, move_to_face.text[0])
 								app.move_cube(gripper, 'twist', '+')
 					Label:
 						text: ''
 						size_hint: (None, None)
-
-				BoxLayout:
-					orientation: 'vertical'
-					Label:
-						text: 'Cam Image'
-						size_hint: (None, None)
-						width: 250
-					BoxLayout:
-						Label:
-							text: 'Orient: '
-							size_hint: None, None
-							size: (50, 40)
-						Label:
-							id: orient
-							text: app.mycube.orientation
-							size_hint: None, None
-							size: (40, 40)
-						Label:
-							text: 'Up: '
-							size_hint: None, None
-							size: (30, 40)
-						Label:
-							id: upface
-							text: app.mycube.get_up_face()
-							size_hint: None, None
-							size: (30, 40)
-						Label:
-							text: 'Rot: '
-							size_hint: None, None
-							size: (30, 40)
-						Label:
-							id: rot
-							text: str(app.mycube.get_up_rot())
-							size_hint: None, None
-							size: (30, 40)
+				Image:
+					size_hint: None, None
+					size: 200, 200
+					pos_hint: {'center_y': 0.5}
+					source: 'testimg\\uface.jpg'
 
 		TabbedPanelItem:
 			id: tab_crop
@@ -170,18 +166,26 @@
 					step: 2
 					value: app.crop_config['size']
 					on_value: app.update_config('Crop', 'size', self.value)
-				DragBox:
-					id: crop_box
-					width: crop_slider.value
-					height: crop_slider.value
-					pos: app.get_screen_pos(app.crop_config['center_x'], 'x', crop_slider.value, app.imgx), app.get_screen_pos(app.crop_config['center_y'], 'y', crop_slider.value, app.imgy)
-					text: '+'
-					on_pos:
-						print 'before:', self.x, ',', self.y
-						app.update_config('Crop', 'center_x', app.get_PIL_pos(self.x, 'x', crop_slider.value, app.imgx))
-						app.update_config('Crop', 'center_y', app.get_PIL_pos(self.y, 'y', crop_slider.value, app.imgy))
-						print 'after:', app.get_PIL_pos(self.x, 'x', crop_slider.value, app.imgx), ',', app.get_PIL_pos(self.y, 'y', crop_slider.value, app.imgy)
-
+				RelativeLayout:
+					id: crop_rel
+					size_hint: None, None
+					size: app.imgx, app.imgy
+					pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+					Image:
+						id: crop_img
+					DragBox:
+						id: crop_box
+						width: crop_slider.value
+						height: crop_slider.value
+						pos: app.center_to_ll((app.crop_config['center_x'], app.crop_config['center_y']), (app.imgx, app.imgy), crop_slider.value, True)
+						text: '+'
+						on_pos:
+							print 'before:', self.x, ',', self.y
+							center = app.ll_to_center((self.x, self.y), (app.imgx, app.imgy), crop_slider.value, True)
+							print center
+							app.update_config('Crop', 'center_x', center[0])
+							app.update_config('Crop', 'center_y', center[1])
+							
 		TabbedPanelItem:
 			id: tab_sites
 			text: 'Sites'
@@ -206,6 +210,13 @@
 					step: 2
 					value: app.site_config['size']
 					on_value: app.update_config('Sites', 'size', self.value)
+				RelativeLayout:
+					id: sites_rel
+					size_hint: None, None
+					size: app.crop_config['size'], app.crop_config['size']
+					pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+					Image:
+						id: sites_img
 
 		TabbedPanelItem:
 			id: tab_grip
@@ -406,4 +417,4 @@
 					size: 140, 50
 					font_size: 18
 					bold: True
-					on_release: app.exit_config()
+					on_release: app.go_screen('home', 'left')
