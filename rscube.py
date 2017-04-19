@@ -96,6 +96,15 @@ UP_FACE_ROT = {
 	'FDB': 0
 }
 
+# Lookup table to reorder list corresponding to given orientation
+# need to subtract 1 from this number to get index
+ROT_TABLE = {
+	0: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+	90: [7, 4, 1, 8, 5, 2, 9, 6, 3],
+	180: [9, 8, 7, 6, 5, 4, 3, 2, 1],
+	270: [3, 6, 9, 2, 5, 8, 1, 4, 7]
+}
+
 testimages = [
 	'testimg/uface.jpg',
 	'testimg/rface.jpg',
@@ -227,19 +236,17 @@ class MyCube(object):
 
 		# crop the image to square
 		img = face_im.crop(self.crop_rect)
-
-		# rotate image as necessary so colors are records in correct order
-		img = img.rotate(-rot)
 		#im.show() # DEBUG
 
 		#print 'Processing face', face, rot # DEBUG
 
 		# loop through each site and store its raw color
 		for i in xrange(9):
+			rot_i = ROT_TABLE[rot][i] - 1
 			site = img.crop(self.__site_rects[i])
 			# if the site has many colors, it must be a logo. Skip it and handle manually
 			if ImageStat.Stat(site).stddev[0] < logo_threshold and ImageStat.Stat(site).stddev[1] < logo_threshold and ImageStat.Stat(site).stddev[2] < logo_threshold:
-				self.__raw_colors[face][i] = ImageStat.Stat(site).mean
+				self.__raw_colors[face][rot_i] = ImageStat.Stat(site).mean
 		
 		return self.__raw_colors[face]
 
