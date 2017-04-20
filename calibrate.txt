@@ -1,7 +1,7 @@
 [Crop]
 center_x = 158
 center_y = 122
-size = 184
+size = 180
 
 [Sites]
 size = 30

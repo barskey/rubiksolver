@@ -6,7 +6,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.slider import Slider
 from kivy.uix.label import Label
 from kivy.graphics import *
-from kivy.properties import StringProperty
+from kivy.properties import NumericProperty
 #from kivy.uix.button import Button
 from kivy.uix.image import Image as KvImage
 #from kivy.uix.behaviors import ButtonBehavior
@@ -103,7 +103,7 @@ class Settings(Screen):
 		site_config = app.site_config
 		size = site_config['size']
 
-		for i in rscube.ROT_TABLE[cube.orientation]:
+		for i in rscube.ROT_TABLE[rscube.UP_FACE_ROT[app.mycube.orientation]]:
 			site_name = 'center' + str(i)
 
 			box = None
@@ -122,6 +122,7 @@ class Scan(Screen):
 	sites = {}
 
 	def on_enter(self):
+		self.scan_index = 0
 		self.scan_cube()
 
 	def scan_cube(self):
@@ -134,9 +135,15 @@ class Scan(Screen):
 		crop_center = (crop_config['center_x'], crop_config['center_y'])
 		crop_size = crop_config['size']
 
-		for tup in SCANCUBE:
+		for index, tup in enumerate(SCANCUBE):
+			if self.scan_index > index: # check where scanning left off
+				continue
+			
+			print 'start scanning', index
+
 			face = tup[0]
 			to_gripper = tup[1]
+			
 			cube.move_face_for_twist(face, to_gripper) # move face to prep for scan
 			up_face = cube.orientation[0]
 
@@ -153,11 +160,7 @@ class Scan(Screen):
 			# scan face
 			face_colors = cube.scan_face() # scans face in up position
 
-			# handle the sites with no matched color first
-			for index, color in face_colors:
-				if color is None:
-					self.
-
+			is_missing_color = False
 			i = 1
 			for color in face_colors:
 				site_name = 'center' + str(i)
@@ -179,7 +182,9 @@ class Scan(Screen):
 						Rectangle(size=(size, size), pos=pos)
 						Color(0, 0, 0)
 						Rectangle(size=(size - 2, size - 2), pos=(pos[0] + 1, pos[1] + 1))
-					self.need_color = True
+					self.scan_index = index
+					is_missing_color = True # break out of for loop at first missing color
+					break
 				else:
 					r, g, b = (x / 255.0 for x in color)
 					with site.canvas:
@@ -189,6 +194,10 @@ class Scan(Screen):
 						Rectangle(size=(size - 2, size - 2), pos=(pos[0] + 1, pos[1] + 1))
 
 				i += 1
+			
+			if is_missing_color: # break out of for loop if there was a missing color
+				break
+			print 'finished scanning', index
 
 class RubikSolverApp(App):
 

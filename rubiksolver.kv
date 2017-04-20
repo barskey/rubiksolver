@@ -49,14 +49,15 @@
 <Scan>:
 	name: 'scan'
 
-	RelativeLayout:
-		id: scan_rel
+	FloatLayout:
+		RelativeLayout:
+			id: scan_rel
 
-		size_hint: None, None
-		size: app.crop_config['size'], app.crop_config['size']
-		pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-		Image:
-			id: scan_img
+			size_hint: None, None
+			size: app.crop_config['size'], app.crop_config['size']
+			pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+			Image:
+				id: scan_img
 
 <DragBox>:
 	canvas:
