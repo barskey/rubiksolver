@@ -123,17 +123,17 @@ class MyCube(object):
 		self.__logo_site = None # store location of site with logo
 		self.__cube_def = None # string representing cube in order U1U2U3...R1...F1...etc
 		self.__solve_string = None # intructions to solve cube
-		
+
 		self.twist_a_pos = self.get_pos('twistA')
 		self.twist_b_pos = self.get_pos('twistB')
 		self.grip_a_pos = self.get_pos('gripA')
 		self.grip_b_pos = self.get_pos('gripB')
-		
+
 		self.site_rects = sites
 		self.crop_rect = crop
-		
+
 		self.__orientation = 'UFD' # current orientation of the cube, Upface, gripper A Face, gripper B Face
-	
+
 	@property
 	def orientation(self):
 		return self.__orientation
@@ -141,11 +141,11 @@ class MyCube(object):
 	@orientation.setter
 	def orientation(self, val):
 		self.__orientation = val
-	
+
 	@property
 	def site_rects(self):
 		return self.__site_rects
-	
+
 	@site_rects.setter
 	def site_rects(self, config_sites):
 		self.__site_rects = [None for i in xrange(9)]
@@ -160,7 +160,7 @@ class MyCube(object):
 	@property
 	def crop_rect(self):
 		return self.__crop_rect
-	
+
 	@crop_rect.setter
 	def crop_rect(self, config_crop):
 		l = config_crop['center_x'] - config_crop['size'] / 2
@@ -168,7 +168,7 @@ class MyCube(object):
 		t = config_crop['center_y'] - config_crop['size'] / 2
 		b = config_crop['center_y'] + config_crop['size'] / 2
 		self.__crop_rect = (l, t, r, b)
-	
+
 	def scan_faces(self):
 		'''
 		Rotate cube and scan each side to process each face
@@ -227,10 +227,10 @@ class MyCube(object):
 		Returns list of colors on this face for uix
 		'''
 		logo_threshold = 8
-		
+
 		face = FACES[self.__orientation[0]]
 		rot = UP_FACE_ROT[self.__orientation]
-		
+
 		#get image from camera
 		face_im = Image.open(testimages[face]) # TODO get camera instead of test images
 
@@ -243,11 +243,11 @@ class MyCube(object):
 		# loop through each site and store its raw color
 		for i in xrange(9):
 			rot_i = ROT_TABLE[rot][i] - 1
-			site = img.crop(self.__site_rects[i])
+			site = img.crop(self.__site_rects[rot_i])
 			# if the site has many colors, it must be a logo. Skip it and handle manually
 			if ImageStat.Stat(site).stddev[0] < logo_threshold and ImageStat.Stat(site).stddev[1] < logo_threshold and ImageStat.Stat(site).stddev[2] < logo_threshold:
 				self.__raw_colors[face][rot_i] = ImageStat.Stat(site).mean
-		
+
 		return self.__raw_colors[face]
 
 	def get_solve_string(self):
@@ -255,7 +255,7 @@ class MyCube(object):
 		Gets the solve string
 		'''
 		return self.__solve_string
-		
+
 	def set_solve_string(self):
 		'''
 		Sets the solve string from kociemba
@@ -270,15 +270,15 @@ class MyCube(object):
 		# TODO read input pin for servo position
 		# pos = GPIO.input(servo_pin)
 		pos = 90 # debug
-		
+
 		return pos
 
 	def get_up_face(self):
 		return FACES_STR[FACE_POSITION[self.__orientation][U]]
-	
+
 	def get_up_rot(self):
 		return UP_FACE_ROT[self.__orientation]
-	
+
 	def grip(self, gripper, cmd):
 		'''
 		Function to open or close gripper
@@ -292,7 +292,7 @@ class MyCube(object):
 			temp = 'Close'
 		elif cmd == 'l':
 			temp = 'Load'
-			
+
 		print temp, 'gripper', gripper
 
 	def twist(self, gripper, dir):
@@ -302,7 +302,7 @@ class MyCube(object):
 		dir = '+' 90-deg CW, '-' 90-deg CCW
 		'''
 		print 'Twist gripper', gripper, dir
-		
+
 	def move_face_for_twist(self, face_to_move, to_gripper = None):
 		'''
 		Decides which gripper to move face to, based on the fewest moves.
@@ -312,10 +312,10 @@ class MyCube(object):
 		'''
 		moves = None
 		orientation = self.__orientation
-		
+
 		# get current position of face to move
 		face = FACE_POSITION[self.__orientation][FACES[face_to_move]]
-		
+
 		moves_a = MOVES_TO_A[face].split(',')
 		if moves_a[0] == '':
 			moves_a = []
@@ -338,7 +338,7 @@ class MyCube(object):
 				moves = moves_b
 				orientation = NEW_ORIENTATION_B[face]
 				to_gripper = 'B'
-			
+
 		for move in moves:
 			gripper_to_move = move[0]
 			cmd = move[1]
@@ -346,11 +346,11 @@ class MyCube(object):
 				self.twist(gripper_to_move, cmd)
 			else: # it must be a grip command
 				self.grip(gripper_to_move, cmd)
-		
+
 		self.__orientation = orientation
-		
+
 		return to_gripper
-		
+
 def luminance(pixel):
 	return (0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2])
 

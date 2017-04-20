@@ -54,9 +54,9 @@ class DragBox(DragBehavior, Label):
 	pass
 
 class SiteBox(DragBehavior, Label):
-	
+
 	def on_pos(self, *args):
-	
+
 		app = App.get_running_app()
 		imgsize = app.crop_config['size']
 		size = app.site_config['size']
@@ -66,7 +66,7 @@ class SiteBox(DragBehavior, Label):
 
 class Site(Label):
 	pass
-		
+
 class Settings(Screen):
 	crop = {}
 	sites = {}
@@ -75,10 +75,10 @@ class Settings(Screen):
 
 		# TODO change this to get actual image from camera
 		img = self.ids.crop_img
-		img.source = 'testimg\\uface.jpg'
+		img.source = 'testimg/uface.jpg'
 
 	def add_sites_img(self):
-	
+
 		app = App.get_running_app()
 		crop_config = app.crop_config
 		center = (crop_config['center_x'], crop_config['center_y'])
@@ -86,26 +86,26 @@ class Settings(Screen):
 
 		# TODO change this to get actual image from camera
 		# load/grab image
-		pimg = PILImage.open('testimg\\uface.jpg')
+		pimg = PILImage.open('testimg/uface.jpg')
 		cimg = crop_pil_img(pimg, center, size)
 		cimg.save('tmp.jpg')
-		
+
 		img = self.ids.sites_img
 		img.source = 'tmp.jpg'
 		img.size = (size, size)
 		img.reload()
-		
+
 		self.add_sites_boxes()
 
 	def add_sites_boxes(self):
-	
+
 		app = App.get_running_app()
 		site_config = app.site_config
 		size = site_config['size']
 
 		for i in rscube.ROT_TABLE[cube.orientation]:
 			site_name = 'center' + str(i)
-			
+
 			box = None
 			if site_name in self.sites:
 				box = self.sites[site_name]
@@ -117,19 +117,19 @@ class Settings(Screen):
 			pos = app.center_to_ll((site_config[site_name]['x'], site_config[site_name]['y']), (app.crop_config['size'], app.crop_config['size']), size, True)
 			box.size = (self.ids.site_slider.value, self.ids.site_slider.value)
 			box.pos = pos
-			
+
 class Scan(Screen):
 	sites = {}
-		
+
 	def on_enter(self):
 		self.scan_cube()
-	
+
 	def scan_cube(self):
 		app = App.get_running_app()
 		site_config = app.site_config
 		size = site_config['size']
 		cube = app.mycube
-		
+
 		crop_config = app.crop_config
 		crop_center = (crop_config['center_x'], crop_config['center_y'])
 		crop_size = crop_config['size']
@@ -139,24 +139,30 @@ class Scan(Screen):
 			to_gripper = tup[1]
 			cube.move_face_for_twist(face, to_gripper) # move face to prep for scan
 			up_face = cube.orientation[0]
-			
+
 			# get and update image
 			pimg = PILImage.open(rscube.testimages[rscube.FACES[up_face]])
 			cimg = crop_pil_img(pimg, crop_center, crop_size)
 			cimg.save('tmp.jpg')
-			
+
 			img = self.ids.scan_img
 			img.source = 'tmp.jpg'
 			img.size = (size, size)
 			img.reload()
-					
+
 			# scan face
 			face_colors = cube.scan_face() # scans face in up position
+
+			# handle the sites with no matched color first
+			for index, color in face_colors:
+				if color is None:
+					self.
+
 			i = 1
 			for color in face_colors:
 				site_name = 'center' + str(i)
 				pos = app.center_to_ll((site_config[site_name]['x'], site_config[site_name]['y']), (app.crop_config['size'], app.crop_config['size']), size, True)
-				
+
 				site = None
 				if site_name in self.sites:
 					site = self.sites[site_name]
@@ -164,13 +170,16 @@ class Scan(Screen):
 					site = Site(id=str(i))
 					self.sites[site_name] = site
 					self.ids.scan_rel.add_widget(site)
+				site.pos = pos
 
 				if color is None:
+					# add a black box with pink outline
 					with site.canvas:
 						Color(1, 0.5, 1)
 						Rectangle(size=(size, size), pos=pos)
 						Color(0, 0, 0)
 						Rectangle(size=(size - 2, size - 2), pos=(pos[0] + 1, pos[1] + 1))
+					self.need_color = True
 				else:
 					r, g, b = (x / 255.0 for x in color)
 					with site.canvas:
@@ -179,11 +188,8 @@ class Scan(Screen):
 						Color(r, g, b)
 						Rectangle(size=(size - 2, size - 2), pos=(pos[0] + 1, pos[1] + 1))
 
-				site.pos = pos
-				#time.sleep(5)
-					
 				i += 1
-			
+
 class RubikSolverApp(App):
 
 	grip_a_config = {}
@@ -248,7 +254,7 @@ class RubikSolverApp(App):
 			x = config.getint('Sites', configname_x)
 			y = config.getint('Sites', configname_y)
 			self.site_config['center' + str(i)] = {'x': x, 'y': y}
-		
+
 		for option in config.options('Colors'):
 			values = config.get('Colors', option).split(',')
 			color = (float(values[0]), float(values[1]), float(values[2]))
@@ -271,7 +277,7 @@ class RubikSolverApp(App):
 		else:
 			ll_y = center[1] - size / 2
 		return (ll_x, ll_y)
-	
+
 	def ll_to_center(self, ll, img_size, size, flipy = False):
 		center_x = ll[0] + size / 2
 		center_y = None
@@ -281,7 +287,7 @@ class RubikSolverApp(App):
 		else:
 			center_y = ll[1] - size / 2
 		return (center_x, center_y)
-	
+
 	def move_cube(self, gripper, op, val):
 		if gripper is not None:
 			if op == 'grip':
@@ -298,6 +304,6 @@ def crop_pil_img(img, center, size):
 	b = t + size
 	return img.crop((l, t, r, b))
 
-			
+
 if __name__ == '__main__':
 	RubikSolverApp().run()

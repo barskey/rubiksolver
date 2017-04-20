@@ -48,10 +48,10 @@
 
 <Scan>:
 	name: 'scan'
-	
+
 	RelativeLayout:
 		id: scan_rel
-		
+
 		size_hint: None, None
 		size: app.crop_config['size'], app.crop_config['size']
 		pos_hint: {'center_x': 0.5, 'center_y': 0.5}
@@ -69,7 +69,7 @@
 	drag_timeout: 10000000
 	drag_distance: 0
 	size_hint: None, None
-	
+
 <SiteBox>:
 	canvas:
 		Color:
@@ -81,7 +81,7 @@
 	drag_timeout: 10000000
 	drag_distance: 0
 	size_hint: None, None
-		
+
 <Settings>:
 	name: 'settings'
 
@@ -93,7 +93,7 @@
 		TabbedPanelItem:
 			id: tab_manual
 			text: 'Manual'
-			
+
 			BoxLayout:
 				padding: 20
 				BoxLayout:
@@ -129,7 +129,7 @@
 					size_hint: None, None
 					size: 200, 200
 					pos_hint: {'center_y': 0.5}
-					source: 'testimg\\uface.jpg'
+					source: 'testimg/uface.jpg'
 
 		TabbedPanelItem:
 			id: tab_crop
@@ -170,7 +170,7 @@
 							center = app.ll_to_center((self.x, self.y), (app.imgx, app.imgy), crop_slider.value, True)
 							app.update_config('Crop', 'center_x', center[0])
 							app.update_config('Crop', 'center_y', center[1])
-							
+
 		TabbedPanelItem:
 			id: tab_sites
 			text: 'Sites'
