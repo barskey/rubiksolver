@@ -6,7 +6,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.slider import Slider
 from kivy.uix.label import Label
 from kivy.graphics import *
-from kivy.properties import NumericProperty
+from kivy.properties import ListProperty, NumericProperty
 #from kivy.uix.button import Button
 from kivy.uix.image import Image as KvImage
 #from kivy.uix.behaviors import ButtonBehavior
@@ -58,7 +58,7 @@ class SiteBox(DragBehavior, Label):
 	def on_pos(self, *args):
 
 		app = App.get_running_app()
-		imgsize = app.crop_config['size']
+		imgsize = app.crop_size
 		size = app.site_config['size']
 		center = app.ll_to_center((self.x, self.y), (imgsize, imgsize), size, True)
 		app.update_config('Sites', self.id + '_x', center[0])
@@ -80,9 +80,8 @@ class Settings(Screen):
 	def add_sites_img(self):
 
 		app = App.get_running_app()
-		crop_config = app.crop_config
-		center = (crop_config['center_x'], crop_config['center_y'])
-		size = crop_config['size']
+		center = (app.crop_center[0], app.crop_center[1])
+		size = app.crop_size
 
 		# TODO change this to get actual image from camera
 		# load/grab image
@@ -114,7 +113,7 @@ class Settings(Screen):
 				self.sites[site_name] = box
 				self.ids.sites_rel.add_widget(box)
 
-			pos = app.center_to_ll((site_config[site_name]['x'], site_config[site_name]['y']), (app.crop_config['size'], app.crop_config['size']), size, True)
+			pos = app.center_to_ll((site_config[site_name]['x'], site_config[site_name]['y']), (app.crop_size, app.crop_size), size, True)
 			box.size = (self.ids.site_slider.value, self.ids.site_slider.value)
 			box.pos = pos
 
@@ -131,19 +130,18 @@ class Scan(Screen):
 		size = site_config['size']
 		cube = app.mycube
 
-		crop_config = app.crop_config
-		crop_center = (crop_config['center_x'], crop_config['center_y'])
-		crop_size = crop_config['size']
+		crop_center = app.crop_center
+		crop_size = app.crop_size
 
 		for index, tup in enumerate(SCANCUBE):
 			if self.scan_index > index: # check where scanning left off
 				continue
-			
+
 			print 'start scanning', index
 
 			face = tup[0]
 			to_gripper = tup[1]
-			
+
 			cube.move_face_for_twist(face, to_gripper) # move face to prep for scan
 			up_face = cube.orientation[0]
 
@@ -164,7 +162,7 @@ class Scan(Screen):
 			i = 1
 			for color in face_colors:
 				site_name = 'center' + str(i)
-				pos = app.center_to_ll((site_config[site_name]['x'], site_config[site_name]['y']), (app.crop_config['size'], app.crop_config['size']), size, True)
+				pos = app.center_to_ll((site_config[site_name]['x'], site_config[site_name]['y']), (app.crop_size, app.crop_size), size, True)
 
 				site = None
 				if site_name in self.sites:
@@ -194,25 +192,30 @@ class Scan(Screen):
 						Rectangle(size=(size - 2, size - 2), pos=(pos[0] + 1, pos[1] + 1))
 
 				i += 1
-			
+
 			if is_missing_color: # break out of for loop if there was a missing color
 				break
 			print 'finished scanning', index
 
 class RubikSolverApp(App):
 
+	mycube = None
 	grip_a_config = {}
 	grip_b_config = {}
 	twist_a_config = {}
 	twist_b_config = {}
-	crop_config = {}
 	site_config = {}
 	colors = {}
+	crop_size = NumericProperty()
+	crop_center = ListProperty([None for i in xrange(3)])
+	site_size = NumericProperty()
+	site_center_x = ListProperty([None for i in xrange(9)])
+	site_center_y = ListProperty([None for i in xrange(9)])
 
 	def build(self):
 		self.get_config()
 
-		self.mycube = rscube.MyCube(self.site_config, self.crop_config, self.grip_a_config, self.twist_a_config, self.grip_b_config, self.twist_b_config)
+		self.mycube = rscube.MyCube(self.site_center_x, self.site_center_y, self.site_size, self.crop_center, self.crop_size, self.grip_a_config, self.twist_a_config, self.grip_b_config, self.twist_b_config)
 
 		self.imgx = IMG_SIZE_X
 		self.imgy = IMG_SIZE_Y
@@ -240,8 +243,12 @@ class RubikSolverApp(App):
 	def get_config(self):
 		config.read(CONFIGFILE)
 
-		for option in config.options('Crop'):
-			self.crop_config[option] = config.getint('Crop', option)
+		self.crop_size = config.getint('Crop', 'size')
+		self.crop_center = [config.getint('Crop', 'center_x'), config.getint('Crop', 'center_y')]
+		crop_list = self.crop_center
+		crop_list.append(self.crop_size)
+		if self.mycube:
+			self.mycube.crop_rect = crop_list # update cube instance with new values
 
 		for option in config.options('GripA'):
 			self.grip_a_config[option] = config.getint('GripA', option)
@@ -256,6 +263,7 @@ class RubikSolverApp(App):
 			self.twist_b_config[option] = config.getint('TwistB', option)
 
 		self.site_config['size'] = config.getint('Sites', 'size')
+		self.site_size = config.getint('Sites', 'size')
 
 		for i in xrange(1, 10):
 			configname_x = 'center' + str(i) + '_x'
@@ -263,6 +271,15 @@ class RubikSolverApp(App):
 			x = config.getint('Sites', configname_x)
 			y = config.getint('Sites', configname_y)
 			self.site_config['center' + str(i)] = {'x': x, 'y': y}
+
+		site_list = [None for i in xrange(10)]
+		site_list[0] = self.site_size
+		for i in xrange(9):
+			self.site_center_x[i] = config.getint('Sites', 'center' + str(i+1) + '_x')
+			self.site_center_y[i] = config.getint('Sites', 'center' + str(i+1) + '_y')
+			site_list[i+1] = (self.site_center_x[i], self.site_center_y[i])
+		if self.mycube:
+			self.mycube.site_rects = site_list
 
 		for option in config.options('Colors'):
 			values = config.get('Colors', option).split(',')

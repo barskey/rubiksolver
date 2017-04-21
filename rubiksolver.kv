@@ -50,11 +50,15 @@
 	name: 'scan'
 
 	FloatLayout:
+		Label:
+			text: 'Colors:'
+			pos: -200, 120
+			bold: True
 		RelativeLayout:
 			id: scan_rel
 
 			size_hint: None, None
-			size: app.crop_config['size'], app.crop_config['size']
+			size: app.crop_size, app.crop_size
 			pos_hint: {'center_x': 0.5, 'center_y': 0.5}
 			Image:
 				id: scan_img
@@ -152,7 +156,7 @@
 					pos: -15, 50
 					range: (20, app.imgy)
 					step: 2
-					value: app.crop_config['size']
+					value: app.crop_size
 					on_value: app.update_config('Crop', 'size', self.value)
 				RelativeLayout:
 					id: crop_rel
@@ -165,7 +169,7 @@
 						id: crop_box
 						width: crop_slider.value
 						height: crop_slider.value
-						pos: app.center_to_ll((app.crop_config['center_x'], app.crop_config['center_y']), (app.imgx, app.imgy), crop_slider.value, True)
+						pos: app.center_to_ll((app.crop_center), (app.imgx, app.imgy), crop_slider.value, True)
 						text: '+'
 						on_pos:
 							center = app.ll_to_center((self.x, self.y), (app.imgx, app.imgy), crop_slider.value, True)

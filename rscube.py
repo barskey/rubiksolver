@@ -116,7 +116,7 @@ testimages = [
 
 class MyCube(object):
 
-	def __init__(self, sites, crop, grip_a, twist_a, grip_b, twist_b):
+	def __init__(self, site_center_x, site_center_y, site_size, crop_center, crop_size, grip_a, twist_a, grip_b, twist_b):
 		self.__raw_colors = [[None for i in range(9)] for j in range(6)] # luminance for each raw color found on cube
 		self.__norm_colors = [[None for i in range(9)] for j in range(6)] # letter representing normalized color for each site on cube
 		self.__face_colors = [None for i in range(6)] # raw color of the center site on each face
@@ -129,8 +129,14 @@ class MyCube(object):
 		self.grip_a_pos = self.get_pos('gripA')
 		self.grip_b_pos = self.get_pos('gripB')
 
-		self.site_rects = sites
-		self.crop_rect = crop
+		site_list = [None for i in xrange(10)] # site_rects expects list of 10, 0 is size, 1-9 are (x,y) tuples
+		site_list[0] = site_size
+		for i in xrange(9):
+			site_list[i+1] = (site_center_x[i], site_center_y[i])
+		self.site_rects = site_list
+
+		config_list = crop_center, crop_size # crop_rect expects list of 2, 0 is (x,y) tuple, 1 is size
+		self.crop_rect = config_list
 
 		self.__orientation = 'UFD' # current orientation of the cube, Upface, gripper A Face, gripper B Face
 
@@ -147,26 +153,29 @@ class MyCube(object):
 		return self.__site_rects
 
 	@site_rects.setter
-	def site_rects(self, config_sites):
+	def site_rects(self, site_config):
 		self.__site_rects = [None for i in xrange(9)]
-		for i in xrange(9):
-			site = 'center' + str(i + 1)
-			l = config_sites[site]['x'] - config_sites['size'] / 2
-			r = config_sites[site]['x'] + config_sites['size'] / 2
-			t = config_sites[site]['y'] - config_sites['size'] / 2
-			b = config_sites[site]['y'] + config_sites['size'] / 2
-			self.__site_rects[i] = (l, t, r, b)
+		size = site_config[0]
+		for i in xrange(10, 1):
+			l = site_config[i][0] - size / 2
+			r = site_config[i][0] + size / 2
+			t = site_config[i][1] - size / 2
+			b = site_config[i][1] + size / 2
+			self.__site_rects[i - 1] = (l, t, r, b)
 
 	@property
 	def crop_rect(self):
 		return self.__crop_rect
 
 	@crop_rect.setter
-	def crop_rect(self, config_crop):
-		l = config_crop['center_x'] - config_crop['size'] / 2
-		r = config_crop['center_x'] + config_crop['size'] / 2
-		t = config_crop['center_y'] - config_crop['size'] / 2
-		b = config_crop['center_y'] + config_crop['size'] / 2
+	def crop_rect(self, crop_config):
+		x = crop_config[0][0]
+		y = crop_config[0][1]
+		size = crop_config[1]
+		l = x - size / 2
+		r = x + size / 2
+		t = y - size / 2
+		b = y + size / 2
 		self.__crop_rect = (l, t, r, b)
 
 	def scan_faces(self):

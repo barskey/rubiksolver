@@ -1,33 +1,33 @@
 [Crop]
-center_x = 158
+center_x = 159
 center_y = 122
-size = 180
+size = 182
 
 [Sites]
-size = 30
-center1_x = 38
+size = 32
+center1_x = 34
 center1_y = 29
-center2_x = 94
+center2_x = 93
 center2_y = 31
 center3_x = 152
-center3_y = 30
-center4_x = 36
+center3_y = 32
+center4_x = 34
 center4_y = 89
 center5_x = 94
 center5_y = 90
-center6_x = 153
-center6_y = 91
-center7_x = 93
+center6_x = 152
+center6_y = 90
+center7_x = 91
 center7_y = 151
-center8_x = 33
-center8_y = 149
-center9_x = 154
-center9_y = 152
+center8_x = 30
+center8_y = 150
+center9_x = 150
+center9_y = 151
 
 [GripA]
-open = 0
-closed = 2
-load = 20
+open = -4
+closed = 4
+load = 19
 
 [GripB]
 open = 17
