@@ -196,10 +196,9 @@
 					pos: -15, 50
 					range: (6, 50)
 					step: 2
-					value: app.site_config['size']
+					value: app.site_size
 					on_value:
 						app.update_config('Sites', 'size', self.value)
-						root.add_sites_boxes()
 				RelativeLayout:
 					id: sites_rel
 					size_hint: None, None

@@ -135,7 +135,7 @@ class MyCube(object):
 			site_list[i+1] = (site_center_x[i], site_center_y[i])
 		self.site_rects = site_list
 
-		config_list = crop_center, crop_size # crop_rect expects list of 2, 0 is (x,y) tuple, 1 is size
+		config_list = crop_center, crop_size # crop_rect expects list of 2: [(x,y), size]
 		self.crop_rect = config_list
 
 		self.__orientation = 'UFD' # current orientation of the cube, Upface, gripper A Face, gripper B Face
@@ -156,7 +156,7 @@ class MyCube(object):
 	def site_rects(self, site_config):
 		self.__site_rects = [None for i in xrange(9)]
 		size = site_config[0]
-		for i in xrange(10, 1):
+		for i in xrange(1, 10):
 			l = site_config[i][0] - size / 2
 			r = site_config[i][0] + size / 2
 			t = site_config[i][1] - size / 2
@@ -177,57 +177,6 @@ class MyCube(object):
 		t = y - size / 2
 		b = y + size / 2
 		self.__crop_rect = (l, t, r, b)
-
-	def scan_faces(self):
-		'''
-		Rotate cube and scan each side to process each face
-		'''
-		# Fully close both grippers
-		self.grip('A', 'c')
-		self.grip('B', 'c')
-		self.__orientation = 'UFD'
-		self.process_face()
-
-		self.grip('B', 'o')
-		self.twist('A', '+')
-		self.twist('A', '+')
-		self.__orientation = 'DFU'
-		self.process_face()
-
-		self.twist('A', '+')
-		self.grip('B', 'c')
-		self.grip('A', 'o')
-		self.twist('A', '-')
-		self.grip('A', 'c')
-		self.__orientation = 'RFL'
-		self.process_face()
-
-		self.grip('B', 'o')
-		self.twist('A', '+')
-		self.twist('A', '+')
-		self.__orientation = 'LFR'
-		self.process_face()
-
-		self.grip('B', 'c')
-		self.grip('A', 'o')
-		self.twist('B', '+')
-		self.grip('A', 'c')
-		self.grip('B', 'o')
-		self.twist('B', '-')
-		self.twist('A', '+')
-		self.grip('B', 'c')
-		self.grip('A', 'o')
-		self.twist('A', '-')
-		self.grip('A', 'c')
-		self.__orientation = 'BDF'
-		self.process_face()
-
-		self.grip('B', 'o')
-		self.twist('A', '+')
-		self.twist('A', '+')
-		self.grip('B', 'c')
-		self.__orientation = 'FDB'
-		self.process_face()
 
 	def scan_face(self):
 		'''
@@ -251,7 +200,7 @@ class MyCube(object):
 
 		# loop through each site and store its raw color
 		for i in xrange(9):
-			rot_i = ROT_TABLE[rot][i] - 1
+			rot_i = ROT_TABLE[rot][i] - 1 # transpose site based on current rotation
 			site = img.crop(self.__site_rects[rot_i])
 			# if the site has many colors, it must be a logo. Skip it and handle manually
 			if ImageStat.Stat(site).stddev[0] < logo_threshold and ImageStat.Stat(site).stddev[1] < logo_threshold and ImageStat.Stat(site).stddev[2] < logo_threshold:
