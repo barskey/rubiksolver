@@ -1,3 +1,5 @@
+#: import FACE_COLORS __main__.FACE_COLORS
+
 <RubikSolver>:
 	canvas:
 		Rectangle:
@@ -46,14 +48,79 @@
 			on_release:
 				app.go_screen('scan', 'left')
 
+<ColorLabel>:
+	canvas:
+		Color:
+			rgb: 0, 0, 0
+		Rectangle:
+			pos: self.pos
+			size: 34, 34
+
 <Scan>:
 	name: 'scan'
 
 	FloatLayout:
 		Label:
 			text: 'Colors:'
-			pos: -200, 120
+			color: (0, 1, 0, 1)
+			pos: -190, 120
 			bold: True
+		ColorLabel:
+			id: white
+			canvas:
+				Color:
+					rgb: FACE_COLORS['white']
+				Rectangle:
+					pos: (self.x + 2, self.y + 2)
+					size: 30, 30
+			pos: 30, 220
+			text: 'U'
+			color: (0, 0, 0)
+		ColorLabel:
+			id: red
+			canvas:
+				Color:
+					rgb: FACE_COLORS['red']
+				Rectangle:
+					pos: (self.x + 2, self.y + 2)
+					size: 30, 30
+			pos: 30, 180
+		ColorLabel:
+			id: orange
+			canvas:
+				Color:
+					rgb: FACE_COLORS['orange']
+				Rectangle:
+					pos: (self.x + 2, self.y + 2)
+					size: 30, 30
+			pos: 30, 140
+		ColorLabel:
+			id: yellow
+			canvas:
+				Color:
+					rgb: FACE_COLORS['yellow']
+				Rectangle:
+					pos: (self.x + 2, self.y + 2)
+					size: 30, 30
+			pos: 30, 100
+		ColorLabel:
+			id: green
+			canvas:
+				Color:
+					rgb: FACE_COLORS['green']
+				Rectangle:
+					pos: (self.x + 2, self.y + 2)
+					size: 30, 30
+			pos: 30, 60
+		ColorLabel:
+			id: blue
+			canvas:
+				Color:
+					rgb: FACE_COLORS['blue']
+				Rectangle:
+					pos: (self.x + 2, self.y + 2)
+					size: 30, 30
+			pos: 30, 20
 		RelativeLayout:
 			id: scan_rel
 

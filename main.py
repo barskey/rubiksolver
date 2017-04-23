@@ -34,6 +34,8 @@ IMG_SIZE_X = 320 # size of image in x to capture from camera
 IMG_SIZE_Y = 240 # side of image in y to capture from camera
 TAB_SIZE = 48 # hard coded for height of tab header plus 4-pixel border on both sides
 
+THRESHOLD = 8 # used to determine how close a color is
+
 # hard-coded instructions for optimizing face scanning
 SCANCUBE = [
 	('F', 'A'), # U is up
@@ -43,6 +45,15 @@ SCANCUBE = [
 	('L', 'A'), # B is up
 	('B', 'B') # F is up
 ]
+
+FACE_COLORS = {
+	'red': [1.0, 0.0, 0.0],
+	'orange': [1.0, 0.5, 0.0],
+	'yellow': [1.0, 1.0, 0.0],
+	'green': [0.0, 0.4, 0.0],
+	'blue': [0.0, 0.0, 1.0],
+	'white': [1.0, 1.0, 1.0],
+}
 
 class RubikSolver(BoxLayout):
 	pass
@@ -63,7 +74,10 @@ class SiteBox(DragBehavior, Label):
 		print self.id
 
 class Site(Label):
-	pass
+
+	def on_touch_up(self, touch):
+		print self.id
+		return True
 
 class Settings(Screen):
 	crop = {}
@@ -112,15 +126,30 @@ class Settings(Screen):
 			box.size = (self.ids.site_slider.value, self.ids.site_slider.value)
 			box.pos = pos
 
+class ColorLabel(Label):
+	def on_touch_up(self, touch):
+		print self.id
+		return True
+
 class Scan(Screen):
 	sites = {}
+	red = ListProperty()
+	green = ListProperty()
+	blue = ListProperty()
+	white = ListProperty()
+	orange = ListProperty()
+	yellow = ListProperty()
 
 	def on_enter(self):
+		app = App.get_running_app()
+
+		for color, value in enumerate(app.colors):
+			self.color = value
+
 		self.scan_index = 0
 		self.scan_cube()
 
 	def scan_cube(self):
-
 		app = App.get_running_app()
 		cube = app.mycube
 
@@ -149,19 +178,20 @@ class Scan(Screen):
 			img.reload()
 
 			# scan face
-			face_colors = cube.scan_face() # scans face in up position
+			face_colors = cube.scan_face() # scans face in up position and receives list of colors in sites 1-9
 			print 'face_colors:', face_colors
 
-			is_missing_color = False
-			for i in xrange(1, 10):
+			has_unsure_sites = False # flag to identify when a site isn't matched very well
+			for i in xrange(1, 10): # for each site 1 thru 9
 				site_name = 'center' + str(i)
-				pos = app.center_to_ll((app.site_center_x[i - 1], app.site_center_y[i - 1]), (app.crop_size, app.crop_size), app.site_size, True)
-				
+				pos = app.center_to_ll((app.site_center_x[i - 1], app.site_center_y[i - 1]), (app.crop_size, app.crop_size), app.site_size, True) # get position of this site
+
 				sites_rot = rscube.ROT_TABLE[rot] # for getting site color with cube in rotated position
-				rot_index = sites_rot[i - 1]
-				color = face_colors[rot_index - 1]
+				rot_index = sites_rot[i - 1] # index of site in rotated position
+				color = face_colors[rot_index - 1] # color in this site
 				print 'color:', color, 'rot_index:', rot_index
-				
+
+				# get site box for this i
 				site = None
 				if site_name in self.sites:
 					site = self.sites[site_name]
@@ -169,27 +199,38 @@ class Scan(Screen):
 					site = Site(id=site_name)
 					self.sites[site_name] = site
 					self.ids.scan_rel.add_widget(site)
-				site.pos = pos
+				site.pos = pos # set site position
 
-				if color is None:
-					# add a black box with pink outline
-					with site.canvas:
-						Color(1, 0.5, 1)
-						Rectangle(size=(app.site_size, app.site_size), pos=pos)
-						Color(0, 0, 0)
-						Rectangle(size=(app.site_size - 2, app.site_size - 2), pos=(pos[0] + 1, pos[1] + 1))
-					self.scan_index = index
-					is_missing_color = True # break out of for loop at first missing color
-					break
-				else:
-					r, g, b = (x / 255.0 for x in color)
-					with site.canvas:
-						Color(0, 0, 0)
-						Rectangle(size=(app.site_size, app.site_size), pos=pos)
-						Color(r, g, b)
-						Rectangle(size=(app.site_size - 2, app.site_size - 2), pos=(pos[0] + 1, pos[1] + 1))
+				# create Color object from site color and convert to lab color for comparison
+				r, g, b = (x / 255.0 for x in color)
+				site_color_lab = convert_color(sRGBColor(r, g, b), LabColor)
+				# check against each config face color to find a match
+				last_delta_e = 999
+				match_color = None
+				for c, val in app.colors.items():
+					r, g, b = (x / 255.0 for x in val)
+					check_color_lab = convert_color(sRGBColor(r, g, b), LabColor) # convert to lab color for comparison
+					delta_e = delta_e_cie2000(site_color_lab, check_color_lab)
+					if delta_e < last_delta_e: # use this check to find the closest match
+						match_color = c
+						last_delta_e = delta_e
+				# If delta_e is not very low, must not be good match. Flag and pause this face for manual correction
+				outline_color = (1.0, 0.5, 1.0)
+				if last_delta_e < THRESHOLD:
+					has_unsure_sites = True
+					outline_color = (0, 0, 0)
 
-			if is_missing_color: # break out of for loop if there was a missing color
+				with site.canvas:
+					r, g, b = outline_color
+					print r, g, b
+					Color(r, g, b)
+					Rectangle(size=(app.site_size, app.site_size), pos=pos)
+					r, g, b = FACE_COLORS[match_color]
+					Color(r, g, b)
+					Rectangle(size=(app.site_size - 4, app.site_size - 4), pos=(pos[0] + 2, pos[1] + 2))
+
+			if has_unsure_sites: # break out of for loop if a site was not matched very well
+				self.scan_index = index
 				break
 			print 'finished scanning', index
 
@@ -270,7 +311,7 @@ class RubikSolverApp(App):
 
 		for option in config.options('Colors'):
 			values = config.get('Colors', option).split(',')
-			color = (float(values[0]), float(values[1]), float(values[2]))
+			color = [float(values[0]), float(values[1]), float(values[2])]
 			self.colors[option] = color
 
 	def update_config(self, setting, option, value):

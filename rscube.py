@@ -32,8 +32,6 @@ FACES = {
 
 FACES_STR = ['U', 'R', 'F', 'D', 'L', 'B']
 
-THRESHOLD = 8 # used to determine how close a color (luminance) is
-
 # ----------------------------------------------------------------------
 # Lookup table to store moves to put given face to gripper A or B.
 # Relative to cube in default position ordered URFDLB
@@ -201,10 +199,8 @@ class MyCube(object):
 		# loop through each site and store its raw color
 		for i in xrange(9):
 			rot_i = ROT_TABLE[rot][i] - 1 # transpose site based on current rotation
-			site = img.crop(self.__site_rects[rot_i])
-			# if the site has many colors, it must be a logo. Skip it and handle manually
-			if ImageStat.Stat(site).stddev[0] < logo_threshold and ImageStat.Stat(site).stddev[1] < logo_threshold and ImageStat.Stat(site).stddev[2] < logo_threshold:
-				self.__raw_colors[face][rot_i] = ImageStat.Stat(site).mean
+			site = img.crop(self.__site_rects[rot_i]) # crop the img so only the site is left
+			self.__raw_colors[face][rot_i] = ImageStat.Stat(site).mean # store the mean color in __raw_colors
 
 		return self.__raw_colors[face]
 
@@ -308,9 +304,3 @@ class MyCube(object):
 		self.__orientation = orientation
 
 		return to_gripper
-
-def luminance(pixel):
-	return (0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2])
-
-def is_similar(a, b, threshold):
-	return abs(luminance(a) - luminance(b)) < threshold
