@@ -80,18 +80,20 @@ FACE_POSITION = {
 # degrees up face is rotated (CW) wrt looking at up face
 UP_FACE_ROT = {
 	'UFD': 0,
-	'RUL': 180,
 	'URD': 90,
-	'LDR': 0,
-	'ULD': 270,
 	'UBD': 180,
-	'DFU': 180,
+	'ULD': 270,
+	'RUL': 180,
+	'LDR': 0,
 	'LFR': 90,
+	'DFU': 180,
 	'BLF': 90,
 	'RFL': 270,
-	'FLB': 270,
 	'BDF': 0,
-	'FDB': 0
+	'FDB': 0,
+	'FRB': 90,
+	'FUB': 180,
+	'FLB': 270
 }
 
 # Lookup table to reorder list corresponding to given orientation
@@ -116,12 +118,13 @@ class MyCube(object):
 
 	def __init__(self, site_center_x, site_center_y, site_size, crop_center, crop_size, grip_a, twist_a, grip_b, twist_b):
 		self.__raw_colors = [[None for i in range(9)] for j in range(6)] # luminance for each raw color found on cube
-		self.__norm_colors = [[None for i in range(9)] for j in range(6)] # letter representing normalized color for each site on cube
-		self.__face_colors = [None for i in range(6)] # raw color of the center site on each face
-		self.__logo_site = None # store location of site with logo
+		self.__face_colors = [None for i in range(6)] # color of the center site on each face
+		self.__cube_colors = [[None for i in range(9)] for j in self.__face_colors] # corresponding face color for each site on cube
 		self.__cube_def = None # string representing cube in order U1U2U3...R1...F1...etc
-		self.__solve_string = None # intructions to solve cube
+		self.solve_to = None # string representing cube solve pattern, None to solve to standard
+		self.__solve_string = None # instructions to solve cube
 
+		# current position of each servo
 		self.twist_a_pos = self.get_pos('twistA')
 		self.twist_b_pos = self.get_pos('twistB')
 		self.grip_a_pos = self.get_pos('gripA')
@@ -176,10 +179,18 @@ class MyCube(object):
 		b = y + size / 2
 		self.__crop_rect = (l, t, r, b)
 
+	@property
+	def solve_to(self):
+		return self.__solve_to
+		
+	@solve_to.setter
+	def solve_to(self, pattern):
+		self.__solve_to = pattern
+	
 	def scan_face(self):
 		'''
-		Gets image from camera, rotates as necessary, gets average (mean) colors
-		in each region, and stores in __raw_colors
+		Gets image from camera, crops and gets average (mean) colors
+		in each region, and stores in __raw_colors.
 		Returns list of colors on this face for uix
 		'''
 		logo_threshold = 8
@@ -197,12 +208,16 @@ class MyCube(object):
 		#print 'Processing face', face, rot # DEBUG
 
 		# loop through each site and store its raw color
-		for i in xrange(9):
-			rot_i = ROT_TABLE[rot][i] - 1 # transpose site based on current rotation
-			site = img.crop(self.__site_rects[rot_i]) # crop the img so only the site is left
-			self.__raw_colors[face][rot_i] = ImageStat.Stat(site).mean # store the mean color in __raw_colors
+		for sitenum in xrange(1, 10):
+			abs_sitenum = ROT_TABLE[rot][sitenum - 1] # get unrotated site number
+			site = img.crop(self.__site_rects[sitenum - 1]) # crop the img so only the site is left
+			if self.__raw_colors[face][abs_sitenum - 1] is None: # if it hasn't already been set
+				self.__raw_colors[face][abs_sitenum - 1] = ImageStat.Stat(site).mean # store the mean color in __raw_colors
 
-		return self.__raw_colors[face]
+		ret_colors = []
+		for i in ROT_TABLE[rot]:
+			ret_colors.append(self.__raw_colors[face][i - 1])
+		return ret_colors # returns rotated list of raw_colors
 
 	def get_solve_string(self):
 		'''
@@ -228,11 +243,36 @@ class MyCube(object):
 		return pos
 
 	def get_up_face(self):
+		'''
+		Returns string representing current up face
+		'''
 		return FACES_STR[FACE_POSITION[self.__orientation][U]]
 
 	def get_up_rot(self):
+		'''
+		Returns current rotation of up_face
+		'''
 		return UP_FACE_ROT[self.__orientation]
+		
+	def get_up_raw_color(self, sitenum):
+		'''
+		Returns the raw color for site sitenum on upface
+		'''
+		sitenum = int(sitenum) - 1 # sites in range 0-8
+		upface = FACES[self.get_up_face()]
+		return self.__raw_colors[upface][sitenum]
 
+	def set_up_raw_color(self, sitenum, rawcolor):
+		'''
+		Sets the raw color for site sitenum on upface. Sitenum needs to be transposed for upface rotation
+		'''
+		rot = UP_FACE_ROT[self.__orientation]
+		rot_sitenum = int(sitenum) - 1 # sites in range 0-8
+		sitenum = ROT_TABLE[rot][rot_sitenum] - 1
+		upface = FACES[self.get_up_face()]
+		self.__raw_colors[upface][sitenum] = rawcolor
+		print self.__raw_colors[upface]
+		
 	def grip(self, gripper, cmd):
 		'''
 		Function to open or close gripper

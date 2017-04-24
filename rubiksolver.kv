@@ -1,5 +1,3 @@
-#: import FACE_COLORS __main__.FACE_COLORS
-
 <RubikSolver>:
 	canvas:
 		Rectangle:
@@ -48,79 +46,30 @@
 			on_release:
 				app.go_screen('scan', 'left')
 
-<ColorLabel>:
+<ColorBox>:
 	canvas:
 		Color:
 			rgb: 0, 0, 0
 		Rectangle:
 			pos: self.pos
 			size: 34, 34
+	size_hint: None, None
+	size: 34, 34
 
 <Scan>:
 	name: 'scan'
 
 	FloatLayout:
+		id: scan_float
+		
 		Label:
 			text: 'Colors:'
+			font_size: 18
 			color: (0, 1, 0, 1)
-			pos: -190, 120
+			size_hint: None, None
+			pos: 0, 240
 			bold: True
-		ColorLabel:
-			id: white
-			canvas:
-				Color:
-					rgb: FACE_COLORS['white']
-				Rectangle:
-					pos: (self.x + 2, self.y + 2)
-					size: 30, 30
-			pos: 30, 220
-			text: 'U'
-			color: (0, 0, 0)
-		ColorLabel:
-			id: red
-			canvas:
-				Color:
-					rgb: FACE_COLORS['red']
-				Rectangle:
-					pos: (self.x + 2, self.y + 2)
-					size: 30, 30
-			pos: 30, 180
-		ColorLabel:
-			id: orange
-			canvas:
-				Color:
-					rgb: FACE_COLORS['orange']
-				Rectangle:
-					pos: (self.x + 2, self.y + 2)
-					size: 30, 30
-			pos: 30, 140
-		ColorLabel:
-			id: yellow
-			canvas:
-				Color:
-					rgb: FACE_COLORS['yellow']
-				Rectangle:
-					pos: (self.x + 2, self.y + 2)
-					size: 30, 30
-			pos: 30, 100
-		ColorLabel:
-			id: green
-			canvas:
-				Color:
-					rgb: FACE_COLORS['green']
-				Rectangle:
-					pos: (self.x + 2, self.y + 2)
-					size: 30, 30
-			pos: 30, 60
-		ColorLabel:
-			id: blue
-			canvas:
-				Color:
-					rgb: FACE_COLORS['blue']
-				Rectangle:
-					pos: (self.x + 2, self.y + 2)
-					size: 30, 30
-			pos: 30, 20
+
 		RelativeLayout:
 			id: scan_rel
 
@@ -129,6 +78,24 @@
 			pos_hint: {'center_x': 0.5, 'center_y': 0.5}
 			Image:
 				id: scan_img
+		
+		Label:
+			id: scan_status
+			text: 'NOTE:\nFix incorrect colors then Continue.'
+			halign: 'center'
+			font_size: 16
+			color: (0, 1, 0, 1)
+			size_hint: None, None
+			pos: root.width / 2 - self.width / 2, root.height - self.height / 2 - 20
+			
+		Button:
+			text: 'Continue'
+			size_hint: None, None
+			bold: True
+			background_color: [0, 1, 0, 1]
+			size: 100, 40
+			pos: root.width - self.width - 10, 10
+			on_release: root.scan_cube()
 
 <DragBox>:
 	canvas:
