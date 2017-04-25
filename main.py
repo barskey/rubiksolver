@@ -73,8 +73,7 @@ class SiteBox(DragBehavior, Label):
 		app.update_config('Sites', self.id + '_y', center[1])
 
 class Settings(Screen):
-	crop = {}
-	sites = {}
+	__sites = {}
 
 	def add_crop_img(self):
 
@@ -104,15 +103,15 @@ class Settings(Screen):
 
 		app = App.get_running_app()
 
-		for i in rscube.ROT_TABLE[rscube.UP_FACE_ROT[app.mycube.orientation]]:
+		for i in rscube.ROT_TABLE[app.mycube.get_up_rot()]:
 			site_name = 'center' + str(i)
 
 			box = None
-			if site_name in self.sites:
-				box = self.sites[site_name]
+			if site_name in self.__sites:
+				box = self.__sites[site_name]
 			else:
 				box = SiteBox(id=site_name)
-				self.sites[site_name] = box
+				self.__sites[site_name] = box
 				self.ids.sites_rel.add_widget(box)
 
 			pos = app.center_to_ll((app.site_center_x[i-1], app.site_center_y[i-1]), (app.crop_size, app.crop_size), app.site_size, True)
@@ -129,9 +128,30 @@ class ColorBox(Label):
 			return True
 	
 class Scan(Screen):
-	sites = {}
+	__sites = {}
 	__fix_color = None
 	
+	def on_pre_enter(self):
+		x = 30
+		y = 235
+		for name, color in COLORS.items():
+			label = ColorBox(id=name)
+			self.ids.scan_float.add_widget(label)
+			with label.canvas:
+				r, g, b = color
+				Color(r, g, b)
+				Rectangle(size=(30, 30), pos=(x + 2, y + 2))
+			label.pos = (x, y)
+			y -= 40
+
+	def on_enter(self):
+		# close grippers
+		App.get_running_app().mycube.grip('A', 'c')
+		App.get_running_app().mycube.grip('B', 'c')
+		
+		self.scan_index = 0 # reset scan index
+		self.scan_cube() # begin scanning cube
+
 	def site_touched(self, site):
 		if self.__fix_color is not None:
 			fix_color = COLORS[self.__fix_color.id]
@@ -167,23 +187,6 @@ class Scan(Screen):
 			r, g, b = fix_color
 			Color(r, g, b)
 			Rectangle(size=(30, 30), pos=(color.pos[0] + 2, color.pos[1] + 2))
-	
-	def on_pre_enter(self):
-		x = 30
-		y = 235
-		for name, color in COLORS.items():
-			label = ColorBox(id=name)
-			self.ids.scan_float.add_widget(label)
-			with label.canvas:
-				r, g, b = color
-				Color(r, g, b)
-				Rectangle(size=(30, 30), pos=(x + 2, y + 2))
-			label.pos = (x, y)
-			y -= 40
-
-	def on_enter(self):
-		self.scan_index = 0
-		self.scan_cube()
 
 	def scan_cube(self):
 		app = App.get_running_app()
@@ -191,16 +194,21 @@ class Scan(Screen):
 
 		for index, tup in enumerate(SCANCUBE):
 			if self.scan_index > index: # skip loop until match where scanning left off
+				print 'skipping index %i' % index
 				continue
 
 			print 'start scanning', index
+			print 'cube orientation: %s' % cube.orientation
 
+			# SCANCUBE contains instructions for moving face to to_gripper, specifically for initial cube scan
 			face = tup[0]
 			to_gripper = tup[1]
 
+			print 'preparing to move face %s to %s' % (face, to_gripper)
 			cube.move_face_for_twist(face, to_gripper) # move face to prep for scan
 			up_face = cube.orientation[0]
 			rot = cube.get_up_rot() # get current rotation of up face
+			print 'new cube orientation: %s' % cube.orientation
 
 			# get and update image
 			pimg = PILImage.open(rscube.testimages[rscube.FACES[up_face]])
@@ -216,7 +224,9 @@ class Scan(Screen):
 			face_colors = cube.scan_face() # scans face in up position and receives list of colors in sites 1-9 wrt current orientation of cube
 
 			has_unsure_sites = False # flag to identify when a site isn't matched very well
+			
 			for sitenum in xrange(1, 10): # for each site 1 thru 9
+				#print 'starting %i' % sitenum
 				site_name = 'center' + str(sitenum)
 				pos = app.center_to_ll((app.site_center_x[sitenum - 1], app.site_center_y[sitenum - 1]), (app.crop_size, app.crop_size), app.site_size, True) # get position of this site
 
@@ -224,22 +234,24 @@ class Scan(Screen):
 
 				# get site box for this sitenum
 				site = None
-				if site_name in self.sites:
-					site = self.sites[site_name]
+				if site_name in self.__sites:
+					site = self.__sites[site_name]
 				else:
 					site = ColorBox(id=site_name)
-					self.sites[site_name] = site
+					self.__sites[site_name] = site
 					self.ids.scan_rel.add_widget(site)
 					
 				site.pos = pos # set site position
 
 				# check against each config face color to find a match
 				match_color, last_delta_e = find_closest_color(color, app.colors)
+				#print match_color, last_delta_e
 
 				outline_color = (0, 0, 0) # start with a black outline
 				# If delta_e is not very low, must not be good match. Flag this face for manual correction
 				if last_delta_e > THRESHOLD:
 					has_unsure_sites = True
+					self.scan_index = index
 					outline_color = (1.0, 0.5, 1.0) # give it a pink outline if unsure
 
 				# draw box with matched color
@@ -252,7 +264,6 @@ class Scan(Screen):
 					Rectangle(size=(app.site_size - 2, app.site_size - 2), pos=(site.pos[0] + 2, site.pos[1] + 2))
 				
 			if has_unsure_sites: # break out of for loop if a site was not matched very well
-				self.scan_index = index
 				break
 			print 'finished scanning', index
 		
@@ -261,7 +272,7 @@ class Scan(Screen):
 		#cube.set_face_colors()
 		#cube.set_cube_colors()
 		self.ids.scan_status.text = ''
-		print 'Done scanning!'
+		print '*****Done scanning!*****'
 
 class RubikSolverApp(App):
 

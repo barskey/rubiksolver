@@ -31,8 +31,7 @@
 			width: 100
 			height: 40
 			pos_hint: {'left': 0, 'bottom': 0}
-			on_release:
-				app.go_screen('settings', 'right')
+			on_release: app.go_screen('settings', 'right')
 
 		Button:
 			text: 'Scan'
@@ -43,8 +42,7 @@
 			width: 100
 			height: 40
 			pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-			on_release:
-				app.go_screen('scan', 'left')
+			on_release: app.go_screen('scan', 'left')
 
 <ColorBox>:
 	canvas:

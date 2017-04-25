@@ -53,27 +53,88 @@ MOVES_TO_B = [
 	'Bo,A+,A+,Bc', 'Bo,A+,Bc,Ao,A-,Ac', 'Ao,B+,Ac,Bo,B-,A+,Bc,Ao,A-,Ac', '', 'Bo,A-,Bc,Ao,A+,Ac', 'Ao,B+,Ac,Bo,B-,A-,Bc,Ao,A+,Ac'
 ]
 
-# Lookup table for new orientation after moving a face to gripper A or B when the cube is in the default position
-# e.g. new_orientation_A[D] gives 'LDR', which the cube will be in after moving D to gripper A
-NEW_ORIENTATION_A = ['RUL', 'URD', 'UFD', 'LDR', 'ULD', 'UBD']
+# Lookup table for new orientation after twisting gripper A or B with the cube in the given position
+# e.g. NEW_ORIENTATION_TWISTA['UFD']['+'] gives 'LDR', which the cube will be in after twisting gripper A CW
+NEW_ORIENTATION_TWISTA = {
+	'UFD': {'+': 'LFR', '-': 'RFL'},
+	'URD': {'+': 'FRB', '-': 'BRF'},
+	'UBD': {'+': 'RBL', '-': 'LBR'},
+	'ULD': {'+': 'BLF', '-': 'FLB'},
+	'RDL': {'+': 'FDB', '-': 'BDF'},
+	'RBL': {'+': 'DBU', '-': 'UBD'},
+	'RUL': {'+': 'BUF', '-': 'FUB'},
+	'RFL': {'+': 'UFD', '-': 'DFU'},
+	'FDB': {'+': 'LDR', '-': 'RDL'},
+	'FRB': {'+': 'DRU', '-': 'URD'},
+	'FUB': {'+': 'RUL', '-': 'LUR'},
+	'FLB': {'+': 'ULD', '-': 'DLU'},
+	'DBU': {'+': 'LBR', '-': 'RBL'},
+	'DRU': {'+': 'BRF', '-': 'FRB'},
+	'DFU': {'+': 'RFL', '-': 'LFR'},
+	'DLU': {'+': 'FLB', '-': 'BLF'},
+	'LDR': {'+': 'BDF', '-': 'FDB'},
+	'LFR': {'+': 'DFU', '-': 'UFD'},
+	'LUR': {'+': 'FUB', '-': 'BUF'},
+	'LBR': {'+': 'UBD', '-': 'DBU'},
+	'BDF': {'+': 'RDL', '-': 'LDR'},
+	'BLF': {'+': 'DLU', '-': 'ULD'},
+	'BUF': {'+': 'LUR', '-': 'RUL'},
+	'BRF': {'+': 'URD', '-': 'DRU'}
+}
 
-NEW_ORIENTATION_B = ['DFU', 'LFR', 'BLF', 'UFD', 'RFL', 'FLB']
-
+NEW_ORIENTATION_TWISTB = {
+	'UFD': {'+': 'ULD', '-': 'URD'},
+	'URD': {'+': 'UFD', '-': 'UBD'},
+	'UBD': {'+': 'URD', '-': 'ULD'},
+	'ULD': {'+': 'UBD', '-': 'UFD'},
+	'RDL': {'+': 'RFL', '-': 'RBL'},
+	'RBL': {'+': 'RDL', '-': 'RUL'},
+	'RUL': {'+': 'RBL', '-': 'RFL'},
+	'RFL': {'+': 'RUL', '-': 'RDL'},
+	'FDB': {'+': 'FLB', '-': 'FRB'},
+	'FRB': {'+': 'FDB', '-': 'FUB'},
+	'FUB': {'+': 'FRB', '-': 'FLB'},
+	'FLB': {'+': 'FUB', '-': 'FDB'},
+	'DBU': {'+': 'DLU', '-': 'DRU'},
+	'DRU': {'+': 'DBU', '-': 'DFU'},
+	'DFU': {'+': 'DRU', '-': 'DLU'},
+	'DLU': {'+': 'DFU', '-': 'DBU'},
+	'LDR': {'+': 'LBR', '-': 'LFR'},
+	'LFR': {'+': 'LDR', '-': 'LUR'},
+	'LUR': {'+': 'LFR', '-': 'LBR'},
+	'LBR': {'+': 'LUR', '-': 'LDR'},
+	'BDF': {'+': 'BRF', '-': 'BLF'},
+	'BLF': {'+': 'BDF', '-': 'BUF'},
+	'BUF': {'+': 'BLF', '-': 'BRF'},
+	'BRF': {'+': 'BUF', '-': 'BDF'}
+}
 # Translate table to get from current orientation to representation as if in default position
 # Order of faces is URFDLB - e.g. for face_position['RUL'], R is in default U, F is in default R, U is in default F, etc.
 # so face_position['RUL'][L] gives face B in the default L position
 FACE_POSITION = {
 	'UFD': [U, R, F, D, L, B],
-	'RUL': [R, F, U, L, B, D],
 	'URD': [U, B, R, D, F, L],
-	'LDR': [L, F, D, R, B, U],
-	'ULD': [U, F, L, D, B, R],
 	'UBD': [U, L, B, D, R, F],
-	'DFU': [D, L, F, U, R, B],
-	'LFR': [L, U, F, R, D, B],
-	'BLF': [B, U, L, F, D, R],
+	'ULD': [U, F, L, D, B, R],
+	'RDL': [R, B, D, L, F, U],
+	'RBL': [R, U, B, L, D, F],
+	'RUL': [R, F, U, L, B, D],
 	'RFL': [R, D, F, L, U, B],
-	'FLB': [F, D, L, B, U, R]
+	'FDB': [F, R, D, B, L, U],
+	'FRB': [F, U, R, B, D, L],
+	'FUB': [F, L, U, B, R, D],
+	'FLB': [F, D, L, B, U, R],
+	'DBU': [D, R, B, U, L, F],
+	'DRU': [D, F, R, U, B, L],
+	'DFU': [D, L, F, U, R, B],
+	'LDR': [L, F, D, R, B, U],
+	'LFR': [L, U, F, R, D, B],
+	'LUR': [L, B, U, R, F, D],
+	'LBR': [L, D, B, R, U, F],
+	'BDF': [B, L, D, F, R, U],
+	'BLF': [B, U, L, F, D, R],
+	'BUF': [B, R, U, F, L, D],
+	'BRF': [B, D, R, F, U, L]
 }
 
 # Lookup table for current rotation of up face when cube is in designated orientation
@@ -123,12 +184,8 @@ class MyCube(object):
 		self.__cube_def = None # string representing cube in order U1U2U3...R1...F1...etc
 		self.solve_to = None # string representing cube solve pattern, None to solve to standard
 		self.__solve_string = None # instructions to solve cube
-
-		# current position of each servo
-		self.twist_a_pos = self.get_pos('twistA')
-		self.twist_b_pos = self.get_pos('twistB')
-		self.grip_a_pos = self.get_pos('gripA')
-		self.grip_b_pos = self.get_pos('gripB')
+		
+		self.__grip_state = {'A': None, 'B': None}
 
 		site_list = [None for i in xrange(10)] # site_rects expects list of 10, 0 is size, 1-9 are (x,y) tuples
 		site_list[0] = site_size
@@ -139,7 +196,11 @@ class MyCube(object):
 		config_list = crop_center, crop_size # crop_rect expects list of 2: [(x,y), size]
 		self.crop_rect = config_list
 
-		self.__orientation = 'UFD' # current orientation of the cube, Upface, gripper A Face, gripper B Face
+		self.orientation = 'UFD' # current orientation of the cube, Upface, gripper A Face, gripper B Face
+		
+		# initialiaze both grippers to load position
+		self.grip('A', 'l')
+		self.grip('B', 'l')
 
 	@property
 	def orientation(self):
@@ -271,7 +332,6 @@ class MyCube(object):
 		sitenum = ROT_TABLE[rot][rot_sitenum] - 1
 		upface = FACES[self.get_up_face()]
 		self.__raw_colors[upface][sitenum] = rawcolor
-		print self.__raw_colors[upface]
 		
 	def grip(self, gripper, cmd):
 		'''
@@ -287,6 +347,7 @@ class MyCube(object):
 		elif cmd == 'l':
 			temp = 'Load'
 
+		self.__grip_state[gripper] = temp
 		print temp, 'gripper', gripper
 
 	def twist(self, gripper, dir):
@@ -295,21 +356,33 @@ class MyCube(object):
 		gripper = 'A' or 'B'
 		dir = '+' 90-deg CW, '-' 90-deg CCW
 		'''
-		print 'Twist gripper', gripper, dir
+		o = self.__orientation
+
+		other_gripper = 'B' if gripper == 'A' else 'A'
+		if self.__grip_state[gripper] == 'Load' or self.__grip_state[other_gripper] == 'Load': # don't twist if either gripper is in load position
+			print 'Can\'t twist. Currently in load position'
+			return
+		if self.__grip_state[other_gripper] == 'Open': # other gripper is open, so this twist moves cube and changes orientation
+			self.__orientation = NEW_ORIENTATION_TWISTA[o][dir] if gripper == 'A' else NEW_ORIENTATION_TWISTB[o][dir]
+			print 'New orientation set to: %s' % self.__orientation
+		print 'Twist gripper %s %s' % (gripper, dir)
 
 	def move_face_for_twist(self, face_to_move, to_gripper = None):
 		'''
-		Decides which gripper to move face to, based on the fewest moves.
+		Will position face_to_move to gripper A or B depending on fewest moves.
 		Moves face to chosen gripper, and updates cube orientation.
-		If gripper passed as arg will move face to that gripper.
+		If gripper passed as arg face_to_move will be positioned to input gripper.
 		Returns chosen gripper
 		'''
 		moves = None
-		orientation = self.__orientation
+		o = self.__orientation
+		print o
 
 		# get current position of face to move
-		face = FACE_POSITION[self.__orientation][FACES[face_to_move]]
+		face = FACE_POSITION[o][FACES[face_to_move]]
+		print 'input face: %s face to move: %i' % (face_to_move, face)
 
+		# get the moves to both gripper A and B so they can be compared
 		moves_a = MOVES_TO_A[face].split(',')
 		if moves_a[0] == '':
 			moves_a = []
@@ -317,22 +390,21 @@ class MyCube(object):
 		if moves_b[0] == '':
 			moves_b = []
 
+		# if a gripper was passed in as argument, move to that gripper
 		if to_gripper == 'A':
 			moves = moves_a
-			orientation = NEW_ORIENTATION_A[face]
 		elif to_gripper == 'B':
 			moves = moves_b
-			orientation = NEW_ORIENTATION_B[face]
-		else: # pick the least number of moves
-			if len(moves_a) <= len(moves_b): # move face to gripper A
-				moves = moves_a
-				orientation = NEW_ORIENTATION_A[face]
+		else: # else pick the least number of moves
+			if len(moves_a) <= len(moves_b):
+				moves = moves_a # moves to gripper A
 				to_gripper = 'A'
-			else: # move face to gripper b
-				moves = moves_b
-				orientation = NEW_ORIENTATION_B[face]
+			else:
+				moves = moves_b # moves to gripper B
 				to_gripper = 'B'
-
+		print 'moving to %s' % to_gripper
+				
+		# perform the moves (if any)
 		for move in moves:
 			gripper_to_move = move[0]
 			cmd = move[1]
@@ -340,7 +412,5 @@ class MyCube(object):
 				self.twist(gripper_to_move, cmd)
 			else: # it must be a grip command
 				self.grip(gripper_to_move, cmd)
-
-		self.__orientation = orientation
 
 		return to_gripper
