@@ -127,6 +127,7 @@ FACE_POSITION = {
 	'DBU': [D, R, B, U, L, F],
 	'DRU': [D, F, R, U, B, L],
 	'DFU': [D, L, F, U, R, B],
+	'DLU': [],
 	'LDR': [L, F, D, R, B, U],
 	'LFR': [L, U, F, R, D, B],
 	'LUR': [L, B, U, R, F, D],
@@ -144,17 +145,26 @@ UP_FACE_ROT = {
 	'URD': 90,
 	'UBD': 180,
 	'ULD': 270,
+	'RDL': 0,
+	'RBL': 90,
 	'RUL': 180,
-	'LDR': 0,
-	'LFR': 90,
-	'DFU': 180,
-	'BLF': 90,
 	'RFL': 270,
-	'BDF': 0,
 	'FDB': 0,
 	'FRB': 90,
 	'FUB': 180,
-	'FLB': 270
+	'FLB': 270,
+	'DBU': 0,
+	'DRU': 90,
+	'DFU': 180,
+	'DLU': 270,
+	'LDR': 0,
+	'LFR': 90,
+	'LUR': 180,
+	'LBR': 270,
+	'BDF': 0,
+	'BLF': 90,
+	'BUF': 180,
+	'BRF': 270
 }
 
 # Lookup table to reorder list corresponding to given orientation
@@ -184,7 +194,7 @@ class MyCube(object):
 		self.__cube_def = None # string representing cube in order U1U2U3...R1...F1...etc
 		self.solve_to = None # string representing cube solve pattern, None to solve to standard
 		self.__solve_string = None # instructions to solve cube
-		
+
 		self.__grip_state = {'A': None, 'B': None}
 
 		site_list = [None for i in xrange(10)] # site_rects expects list of 10, 0 is size, 1-9 are (x,y) tuples
@@ -197,7 +207,7 @@ class MyCube(object):
 		self.crop_rect = config_list
 
 		self.orientation = 'UFD' # current orientation of the cube, Upface, gripper A Face, gripper B Face
-		
+
 		# initialiaze both grippers to load position
 		self.grip('A', 'l')
 		self.grip('B', 'l')
@@ -243,11 +253,11 @@ class MyCube(object):
 	@property
 	def solve_to(self):
 		return self.__solve_to
-		
+
 	@solve_to.setter
 	def solve_to(self, pattern):
 		self.__solve_to = pattern
-	
+
 	def scan_face(self):
 		'''
 		Gets image from camera, crops and gets average (mean) colors
@@ -314,7 +324,7 @@ class MyCube(object):
 		Returns current rotation of up_face
 		'''
 		return UP_FACE_ROT[self.__orientation]
-		
+
 	def get_up_raw_color(self, sitenum):
 		'''
 		Returns the raw color for site sitenum on upface
@@ -332,7 +342,7 @@ class MyCube(object):
 		sitenum = ROT_TABLE[rot][rot_sitenum] - 1
 		upface = FACES[self.get_up_face()]
 		self.__raw_colors[upface][sitenum] = rawcolor
-		
+
 	def grip(self, gripper, cmd):
 		'''
 		Function to open or close gripper
@@ -403,7 +413,7 @@ class MyCube(object):
 				moves = moves_b # moves to gripper B
 				to_gripper = 'B'
 		print 'moving to %s' % to_gripper
-				
+
 		# perform the moves (if any)
 		for move in moves:
 			gripper_to_move = move[0]

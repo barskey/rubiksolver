@@ -38,7 +38,6 @@ THRESHOLD = 8 # used to determine how close a color is
 
 # hard-coded instructions for optimizing face scanning
 SCANCUBE = [
-	('F', 'A'), # U is up
 	('U', 'B'), # D is up
 	('L', 'B'), # R is up
 	('R', 'B'), # L is up
@@ -126,11 +125,11 @@ class ColorBox(Label):
 			else:
 				App.get_running_app().sm.get_screen('scan').site_touched(self)
 			return True
-	
+
 class Scan(Screen):
 	__sites = {}
 	__fix_color = None
-	
+
 	def on_pre_enter(self):
 		x = 30
 		y = 235
@@ -148,7 +147,7 @@ class Scan(Screen):
 		# close grippers
 		App.get_running_app().mycube.grip('A', 'c')
 		App.get_running_app().mycube.grip('B', 'c')
-		
+
 		self.scan_index = 0 # reset scan index
 		self.scan_cube() # begin scanning cube
 
@@ -162,13 +161,13 @@ class Scan(Screen):
 				r, g, b = fix_color
 				Color(r, g, b)
 				Rectangle(size=(site.size[0] - 4, site.size[1] - 4), pos=(site.pos[0] + 2, site.pos[1] + 2))
-			
+
 			app = App.get_running_app()
 			sitenum = site.id[-1] # site number of corrected site
-			
+
 			raw_color = app.colors[self.__fix_color.id] # get raw color corresponding to new color
 			app.mycube.set_up_raw_color(sitenum, raw_color) # set raw_color for this site on cube object
-	
+
 	def color_touched(self, color):
 		if self.__fix_color is not None:
 			prev_fix = self.__fix_color
@@ -197,18 +196,17 @@ class Scan(Screen):
 				print 'skipping index %i' % index
 				continue
 
-			print 'start scanning', index
-			print 'cube orientation: %s' % cube.orientation
+			print 'Begin scanning %i.' % index
+			print 'Cube orientation: %s' % cube.orientation
 
 			# SCANCUBE contains instructions for moving face to to_gripper, specifically for initial cube scan
 			face = tup[0]
 			to_gripper = tup[1]
 
-			print 'preparing to move face %s to %s' % (face, to_gripper)
-			cube.move_face_for_twist(face, to_gripper) # move face to prep for scan
 			up_face = cube.orientation[0]
 			rot = cube.get_up_rot() # get current rotation of up face
 			print 'new cube orientation: %s' % cube.orientation
+			self.ids.scan_status.text = 'Scanning face ' + up_face
 
 			# get and update image
 			pimg = PILImage.open(rscube.testimages[rscube.FACES[up_face]])
@@ -224,7 +222,7 @@ class Scan(Screen):
 			face_colors = cube.scan_face() # scans face in up position and receives list of colors in sites 1-9 wrt current orientation of cube
 
 			has_unsure_sites = False # flag to identify when a site isn't matched very well
-			
+
 			for sitenum in xrange(1, 10): # for each site 1 thru 9
 				#print 'starting %i' % sitenum
 				site_name = 'center' + str(sitenum)
@@ -240,7 +238,7 @@ class Scan(Screen):
 					site = ColorBox(id=site_name)
 					self.__sites[site_name] = site
 					self.ids.scan_rel.add_widget(site)
-					
+
 				site.pos = pos # set site position
 
 				# check against each config face color to find a match
@@ -253,6 +251,7 @@ class Scan(Screen):
 					has_unsure_sites = True
 					self.scan_index = index
 					outline_color = (1.0, 0.5, 1.0) # give it a pink outline if unsure
+					self.ids.scan_status.text = 'NOTE: Could not match all sites.\nFix highlighted sites and Continue.'
 
 				# draw box with matched color
 				with site.canvas:
@@ -262,16 +261,20 @@ class Scan(Screen):
 					r, g, b = COLORS[match_color]
 					Color(r, g, b)
 					Rectangle(size=(app.site_size - 2, app.site_size - 2), pos=(site.pos[0] + 2, site.pos[1] + 2))
-				
+
 			if has_unsure_sites: # break out of for loop if a site was not matched very well
 				break
-			print 'finished scanning', index
-		
+			print 'Finished scanning %i.' % index
+
+			# all sites have been scanned and there are no unsure sites, so move cube to next face
+			print 'Preparing to move face %s to %s.' % (face, to_gripper)
+			cube.move_face_for_twist(face, to_gripper) # move face to prep for scan
+
+
 		# If we get this far, all sides have been processed and there are no unsure sites.
 		# Now cube can set its own face_colors and cube_colors
 		#cube.set_face_colors()
 		#cube.set_cube_colors()
-		self.ids.scan_status.text = ''
 		print '*****Done scanning!*****'
 
 class RubikSolverApp(App):
