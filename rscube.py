@@ -127,7 +127,7 @@ FACE_POSITION = {
 	'DBU': [D, R, B, U, L, F],
 	'DRU': [D, F, R, U, B, L],
 	'DFU': [D, L, F, U, R, B],
-	'DLU': [],
+	'DLU': [D, B, L, U, F, R],
 	'LDR': [L, F, D, R, B, U],
 	'LFR': [L, U, F, R, D, B],
 	'LUR': [L, B, U, R, F, D],
@@ -188,14 +188,14 @@ testimages = [
 class MyCube(object):
 
 	def __init__(self, site_center_x, site_center_y, site_size, crop_center, crop_size, grip_a, twist_a, grip_b, twist_b):
-		self.__raw_colors = [[None for i in range(9)] for j in range(6)] # luminance for each raw color found on cube
-		self.__face_colors = [None for i in range(6)] # color of the center site on each face
-		self.__cube_colors = [[None for i in range(9)] for j in self.__face_colors] # corresponding face color for each site on cube
-		self.__cube_def = None # string representing cube in order U1U2U3...R1...F1...etc
+		self._raw_colors = [[None for i in range(9)] for j in range(6)] # luminance for each raw color found on cube
+		self._face_colors = [None for i in range(6)] # color of the center site on each face
+		self._cube_colors = [[None for i in range(9)] for j in self._face_colors] # letter for corresponding face color for each site on cube
+		self._cube_def = None # string representing cube in order U1U2U3...R1...F1...etc
 		self.solve_to = None # string representing cube solve pattern, None to solve to standard
-		self.__solve_string = None # instructions to solve cube
+		self._solve_string = None # instructions to solve cube
 
-		self.__grip_state = {'A': None, 'B': None}
+		self._grip_state = {'A': None, 'B': None}
 
 		site_list = [None for i in xrange(10)] # site_rects expects list of 10, 0 is size, 1-9 are (x,y) tuples
 		site_list[0] = site_size
@@ -214,30 +214,30 @@ class MyCube(object):
 
 	@property
 	def orientation(self):
-		return self.__orientation
+		return self._orientation
 
 	@orientation.setter
 	def orientation(self, val):
-		self.__orientation = val
+		self._orientation = val
 
 	@property
 	def site_rects(self):
-		return self.__site_rects
+		return self._site_rects
 
 	@site_rects.setter
 	def site_rects(self, site_config):
-		self.__site_rects = [None for i in xrange(9)]
+		self._site_rects = [None for i in xrange(9)]
 		size = site_config[0]
 		for i in xrange(1, 10):
 			l = site_config[i][0] - size / 2
 			r = site_config[i][0] + size / 2
 			t = site_config[i][1] - size / 2
 			b = site_config[i][1] + size / 2
-			self.__site_rects[i - 1] = (l, t, r, b)
+			self._site_rects[i - 1] = (l, t, r, b)
 
 	@property
 	def crop_rect(self):
-		return self.__crop_rect
+		return self._crop_rect
 
 	@crop_rect.setter
 	def crop_rect(self, crop_config):
@@ -248,26 +248,26 @@ class MyCube(object):
 		r = x + size / 2
 		t = y - size / 2
 		b = y + size / 2
-		self.__crop_rect = (l, t, r, b)
+		self._crop_rect = (l, t, r, b)
 
 	@property
 	def solve_to(self):
-		return self.__solve_to
+		return self._solve_to
 
 	@solve_to.setter
 	def solve_to(self, pattern):
-		self.__solve_to = pattern
+		self._solve_to = pattern
 
 	def scan_face(self):
 		'''
 		Gets image from camera, crops and gets average (mean) colors
-		in each region, and stores in __raw_colors.
+		in each region, and stores in _raw_colors.
 		Returns list of colors on this face for uix
 		'''
 		logo_threshold = 8
 
-		face = FACES[self.__orientation[0]]
-		rot = UP_FACE_ROT[self.__orientation]
+		face = FACES[self._orientation[0]]
+		rot = UP_FACE_ROT[self._orientation]
 
 		#get image from camera
 		face_im = Image.open(testimages[face]) # TODO get camera instead of test images
@@ -281,27 +281,45 @@ class MyCube(object):
 		# loop through each site and store its raw color
 		for sitenum in xrange(1, 10):
 			abs_sitenum = ROT_TABLE[rot][sitenum - 1] # get unrotated site number
-			site = img.crop(self.__site_rects[sitenum - 1]) # crop the img so only the site is left
-			if self.__raw_colors[face][abs_sitenum - 1] is None: # if it hasn't already been set
-				self.__raw_colors[face][abs_sitenum - 1] = ImageStat.Stat(site).mean # store the mean color in __raw_colors
+			site = img.crop(self._site_rects[sitenum - 1]) # crop the img so only the site is left
+			if self._raw_colors[face][abs_sitenum - 1] is None: # if it hasn't already been set
+				self._raw_colors[face][abs_sitenum - 1] = ImageStat.Stat(site).mean # store the mean color in _raw_colors
 
 		ret_colors = []
 		for i in ROT_TABLE[rot]:
-			ret_colors.append(self.__raw_colors[face][i - 1])
+			ret_colors.append(self._raw_colors[face][i - 1])
 		return ret_colors # returns rotated list of raw_colors
+	
+	def set_face_color(self, f, color):
+		'''
+		Sets face colors in the order URFDLB
+		'''
+		face = str(f)
+		if not face.isdigit():
+			face = FACES[face]
+		self._face_colors[face] = color
+	
+	def dup_face_colors(self):
+		'''
+		Returns true if there are duplicate face colors
+		'''
+		if len(self._face_colors) > len(set(self._face_colors)): # if there are dups
+			return True
+		else:
+			return False
 
 	def get_solve_string(self):
 		'''
 		Gets the solve string
 		'''
-		return self.__solve_string
+		return self._solve_string
 
 	def set_solve_string(self):
 		'''
 		Sets the solve string from kociemba
 		'''
-		#self.__solve_string = solve(self.__cube_def) # TODO allow solve to pattern also
-		self.__solve_string = None
+		#self._solve_string = solve(self._cube_def) # TODO allow solve to pattern also
+		self._solve_string = None
 
 	def get_pos(self, servo_pin):
 		'''
@@ -317,13 +335,13 @@ class MyCube(object):
 		'''
 		Returns string representing current up face
 		'''
-		return FACES_STR[FACE_POSITION[self.__orientation][U]]
+		return FACES_STR[FACE_POSITION[self._orientation][U]]
 
 	def get_up_rot(self):
 		'''
 		Returns current rotation of up_face
 		'''
-		return UP_FACE_ROT[self.__orientation]
+		return UP_FACE_ROT[self._orientation]
 
 	def get_up_raw_color(self, sitenum):
 		'''
@@ -331,17 +349,17 @@ class MyCube(object):
 		'''
 		sitenum = int(sitenum) - 1 # sites in range 0-8
 		upface = FACES[self.get_up_face()]
-		return self.__raw_colors[upface][sitenum]
+		return self._raw_colors[upface][sitenum]
 
 	def set_up_raw_color(self, sitenum, rawcolor):
 		'''
 		Sets the raw color for site sitenum on upface. Sitenum needs to be transposed for upface rotation
 		'''
-		rot = UP_FACE_ROT[self.__orientation]
+		rot = UP_FACE_ROT[self._orientation]
 		rot_sitenum = int(sitenum) - 1 # sites in range 0-8
 		sitenum = ROT_TABLE[rot][rot_sitenum] - 1
 		upface = FACES[self.get_up_face()]
-		self.__raw_colors[upface][sitenum] = rawcolor
+		self._raw_colors[upface][sitenum] = rawcolor
 
 	def grip(self, gripper, cmd):
 		'''
@@ -357,8 +375,8 @@ class MyCube(object):
 		elif cmd == 'l':
 			temp = 'Load'
 
-		self.__grip_state[gripper] = temp
-		print temp, 'gripper', gripper
+		self._grip_state[gripper] = temp
+		print '%s gripper %s' % (temp, gripper)
 
 	def twist(self, gripper, dir):
 		'''
@@ -366,16 +384,15 @@ class MyCube(object):
 		gripper = 'A' or 'B'
 		dir = '+' 90-deg CW, '-' 90-deg CCW
 		'''
-		o = self.__orientation
+		o = self._orientation
 
 		other_gripper = 'B' if gripper == 'A' else 'A'
-		if self.__grip_state[gripper] == 'Load' or self.__grip_state[other_gripper] == 'Load': # don't twist if either gripper is in load position
+		if self._grip_state[gripper] == 'Load' or self._grip_state[other_gripper] == 'Load': # don't twist if either gripper is in load position
 			print 'Can\'t twist. Currently in load position'
 			return
-		if self.__grip_state[other_gripper] == 'Open': # other gripper is open, so this twist moves cube and changes orientation
-			self.__orientation = NEW_ORIENTATION_TWISTA[o][dir] if gripper == 'A' else NEW_ORIENTATION_TWISTB[o][dir]
-			print 'New orientation set to: %s' % self.__orientation
-		print 'Twist gripper %s %s' % (gripper, dir)
+		if self._grip_state[other_gripper] == 'Open': # other gripper is open, so this twist moves cube and changes orientation
+			self._orientation = NEW_ORIENTATION_TWISTA[o][dir] if gripper == 'A' else NEW_ORIENTATION_TWISTB[o][dir]
+		print 'Twist gripper %s %s Orientation: %s' % (gripper, dir, self._orientation)
 
 	def move_face_for_twist(self, face_to_move, to_gripper = None):
 		'''
@@ -385,12 +402,11 @@ class MyCube(object):
 		Returns chosen gripper
 		'''
 		moves = None
-		o = self.__orientation
+		o = self._orientation
 		print o
 
 		# get current position of face to move
-		face = FACE_POSITION[o][FACES[face_to_move]]
-		print 'input face: %s face to move: %i' % (face_to_move, face)
+		face = FACE_POSITION[o].index(FACES[face_to_move])
 
 		# get the moves to both gripper A and B so they can be compared
 		moves_a = MOVES_TO_A[face].split(',')
@@ -412,7 +428,7 @@ class MyCube(object):
 			else:
 				moves = moves_b # moves to gripper B
 				to_gripper = 'B'
-		print 'moving to %s' % to_gripper
+		print 'Moving face %i to gripper %s' % (face, to_gripper)
 
 		# perform the moves (if any)
 		for move in moves:

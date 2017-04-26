@@ -38,11 +38,12 @@ THRESHOLD = 8 # used to determine how close a color is
 
 # hard-coded instructions for optimizing face scanning
 SCANCUBE = [
+	('D', 'B'), # U is up
 	('U', 'B'), # D is up
 	('L', 'B'), # R is up
 	('R', 'B'), # L is up
-	('L', 'A'), # B is up
-	('B', 'B') # F is up
+	('F', 'B'), # B is up
+	('B', 'B')  # F is up
 ]
 
 COLORS = {
@@ -72,7 +73,7 @@ class SiteBox(DragBehavior, Label):
 		app.update_config('Sites', self.id + '_y', center[1])
 
 class Settings(Screen):
-	__sites = {}
+	_sites = {}
 
 	def add_crop_img(self):
 
@@ -106,11 +107,11 @@ class Settings(Screen):
 			site_name = 'center' + str(i)
 
 			box = None
-			if site_name in self.__sites:
-				box = self.__sites[site_name]
+			if site_name in self._sites:
+				box = self._sites[site_name]
 			else:
 				box = SiteBox(id=site_name)
-				self.__sites[site_name] = box
+				self._sites[site_name] = box
 				self.ids.sites_rel.add_widget(box)
 
 			pos = app.center_to_ll((app.site_center_x[i-1], app.site_center_y[i-1]), (app.crop_size, app.crop_size), app.site_size, True)
@@ -127,8 +128,9 @@ class ColorBox(Label):
 			return True
 
 class Scan(Screen):
-	__sites = {}
-	__fix_color = None
+	_sites = {}
+	_fix_color = None
+	_pause_each_face = False
 
 	def on_pre_enter(self):
 		x = 30
@@ -148,12 +150,12 @@ class Scan(Screen):
 		App.get_running_app().mycube.grip('A', 'c')
 		App.get_running_app().mycube.grip('B', 'c')
 
-		self.scan_index = 0 # reset scan index
+		self._scan_index = 0 # reset scan index
 		self.scan_cube() # begin scanning cube
 
 	def site_touched(self, site):
-		if self.__fix_color is not None:
-			fix_color = COLORS[self.__fix_color.id]
+		if self._fix_color is not None:
+			fix_color = COLORS[self._fix_color.id]
 			# update the site box with new color
 			with site.canvas:
 				Color(0, 0, 0)
@@ -165,20 +167,20 @@ class Scan(Screen):
 			app = App.get_running_app()
 			sitenum = site.id[-1] # site number of corrected site
 
-			raw_color = app.colors[self.__fix_color.id] # get raw color corresponding to new color
+			raw_color = app.colors[self._fix_color.id] # get raw color corresponding to new color
 			app.mycube.set_up_raw_color(sitenum, raw_color) # set raw_color for this site on cube object
 
 	def color_touched(self, color):
-		if self.__fix_color is not None:
-			prev_fix = self.__fix_color
-			prev_color = COLORS[self.__fix_color.id]
+		if self._fix_color is not None:
+			prev_fix = self._fix_color
+			prev_color = COLORS[self._fix_color.id]
 			with prev_fix.canvas:
 				Color(0, 0, 0)
 				Rectangle(size=prev_fix.size, pos=(prev_fix.pos))
 				r, g, b = prev_color
 				Color(r, g, b)
 				Rectangle(size=(30, 30), pos=(prev_fix.pos[0] + 2, prev_fix.pos[1] + 2))
-		self.__fix_color = color
+		self._fix_color = color
 		fix_color = COLORS[color.id]
 		with color.canvas:
 			Color(0, 1, 0)
@@ -191,8 +193,8 @@ class Scan(Screen):
 		app = App.get_running_app()
 		cube = app.mycube
 
-		for index, tup in enumerate(SCANCUBE):
-			if self.scan_index > index: # skip loop until match where scanning left off
+		for index, tup in enumerate(SCANCUBE): # loop 6 times to scan each face
+			if self._scan_index > index: # skip loop until match where scanning left off
 				print 'skipping index %i' % index
 				continue
 
@@ -200,12 +202,14 @@ class Scan(Screen):
 			print 'Cube orientation: %s' % cube.orientation
 
 			# SCANCUBE contains instructions for moving face to to_gripper, specifically for initial cube scan
-			face = tup[0]
-			to_gripper = tup[1]
+			face, to_gripper = tup
 
-			up_face = cube.orientation[0]
+			# move cube to next face
+			print 'Preparing to move face %s to %s.' % (face, to_gripper)
+			cube.move_face_for_twist(face, to_gripper) # move face to prep for scan
+
+			up_face = cube.orientation[0] # get current up face
 			rot = cube.get_up_rot() # get current rotation of up face
-			print 'new cube orientation: %s' % cube.orientation
 			self.ids.scan_status.text = 'Scanning face ' + up_face
 
 			# get and update image
@@ -232,26 +236,27 @@ class Scan(Screen):
 
 				# get site box for this sitenum
 				site = None
-				if site_name in self.__sites:
-					site = self.__sites[site_name]
+				if site_name in self._sites:
+					site = self._sites[site_name]
 				else:
 					site = ColorBox(id=site_name)
-					self.__sites[site_name] = site
+					self._sites[site_name] = site
 					self.ids.scan_rel.add_widget(site)
 
 				site.pos = pos # set site position
 
 				# check against each config face color to find a match
-				match_color, last_delta_e = find_closest_color(color, app.colors)
-				#print match_color, last_delta_e
+				match_color, delta_e = find_closest_color(color, app.colors)
+				#print match_color, delta_e
 
 				outline_color = (0, 0, 0) # start with a black outline
 				# If delta_e is not very low, must not be good match. Flag this face for manual correction
-				if last_delta_e > THRESHOLD:
+				if delta_e > THRESHOLD:
 					has_unsure_sites = True
-					self.scan_index = index
+					print 'Unsure site found at %i' % sitenum
+					self._scan_index = index
 					outline_color = (1.0, 0.5, 1.0) # give it a pink outline if unsure
-					self.ids.scan_status.text = 'NOTE: Could not match all sites.\nFix highlighted sites and Continue.'
+					self.ids.scan_status.text = 'HELP: I couldn\'t quite match all sites.\nFix highlighted sites and Continue.'
 
 				# draw box with matched color
 				with site.canvas:
@@ -263,19 +268,30 @@ class Scan(Screen):
 					Rectangle(size=(app.site_size - 2, app.site_size - 2), pos=(site.pos[0] + 2, site.pos[1] + 2))
 
 			if has_unsure_sites: # break out of for loop if a site was not matched very well
+				print 'Breaking for unsure sites.'
 				break
+			elif self._pause_each_face: # break out of loop if set to pause for each site
+				self.ids.scan_status.text = 'Check each color to make sure I matched\nit correctly. Then click Continue.'
+				self._scan_index = index + 1
+				print 'Breaking for pause each face'
+			# face has been scanned and there are no unsure sites
+			match_color, detla_e = find_closest_color(face_colors[4], app.colors)
+			print 'Index %i: Setting face %s face_color to %s' % (index, up_face, match_color)
+			cube.set_face_color(up_face, match_color)
 			print 'Finished scanning %i.' % index
 
-			# all sites have been scanned and there are no unsure sites, so move cube to next face
-			print 'Preparing to move face %s to %s.' % (face, to_gripper)
-			cube.move_face_for_twist(face, to_gripper) # move face to prep for scan
-
-
-		# If we get this far, all sides have been processed and there are no unsure sites.
-		# Now cube can set its own face_colors and cube_colors
-		#cube.set_face_colors()
-		#cube.set_cube_colors()
-		print '*****Done scanning!*****'
+		# If we get this far, all sides have been processed and face colors have been set.
+		# Now cube can set its own cube_colors
+		if not has_unsure_sites:
+			if cube.dup_face_colors():
+				self.ids.scan_status.text = 'Oops. I don\'t think I got that scan right.\nLet\'s re-scan and check every color.'
+				self.ids.btn_next.text = 'Re-Scan'
+				self._pause_each_face = True
+			else:
+				#cube.set_cube_colors()
+				print '*****Done scanning!*****'
+				self.ids.btn_next.text = 'Next'
+				self.ids.scan_status.text = 'Scanning complete.\nClick Next to continue.'
 
 class RubikSolverApp(App):
 
