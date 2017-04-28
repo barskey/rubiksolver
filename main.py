@@ -103,7 +103,7 @@ class Settings(Screen):
 
 		app = App.get_running_app()
 
-		for i in rscube.ROT_TABLE[app.mycube.get_up_rot()]:
+		for i in range(1, 10):
 			site_name = 'center' + str(i)
 
 			box = None
@@ -115,7 +115,7 @@ class Settings(Screen):
 				self.ids.sites_rel.add_widget(box)
 
 			pos = app.center_to_ll((app.site_center_x[i-1], app.site_center_y[i-1]), (app.crop_size, app.crop_size), app.site_size, True)
-			box.size = (self.ids.site_slider.value, self.ids.site_slider.value)
+			box.size = (app.site_size, app.site_size)
 			box.pos = pos
 
 class ColorBox(Label):
@@ -138,6 +138,7 @@ class Scan(Screen):
 		for name, color in COLORS.items():
 			label = ColorBox(id=name)
 			self.ids.scan_float.add_widget(label)
+			label.size = (34, 34)
 			with label.canvas:
 				r, g, b = color
 				Color(r, g, b)
@@ -227,7 +228,7 @@ class Scan(Screen):
 
 			has_unsure_sites = False # flag to identify when a site isn't matched very well
 
-			for sitenum in xrange(1, 10): # for each site 1 thru 9
+			for sitenum in range(1, 10): # for each site 1 thru 9
 				#print 'starting %i' % sitenum
 				site_name = 'center' + str(sitenum)
 				pos = app.center_to_ll((app.site_center_x[sitenum - 1], app.site_center_y[sitenum - 1]), (app.crop_size, app.crop_size), app.site_size, True) # get position of this site
@@ -256,7 +257,7 @@ class Scan(Screen):
 					print 'Unsure site found at %i' % sitenum
 					self._scan_index = index
 					outline_color = (1.0, 0.5, 1.0) # give it a pink outline if unsure
-					self.ids.scan_status.text = 'HELP: I couldn\'t quite match all sites.\nFix highlighted sites and Continue.'
+					self.ids.scan_status.text = 'Not all sites were matched.\nFix highlighted sites and Continue.'
 
 				# draw box with matched color
 				with site.canvas:
@@ -265,28 +266,33 @@ class Scan(Screen):
 					Rectangle(size=site.size, pos=pos)
 					r, g, b = COLORS[match_color]
 					Color(r, g, b)
-					Rectangle(size=(app.site_size - 2, app.site_size - 2), pos=(site.pos[0] + 2, site.pos[1] + 2))
+					Rectangle(size=(site.size[0] - 4, site.size[1] - 4), pos=(site.pos[0] + 2, site.pos[1] + 2))
+				
+				# set match_color to this site on this face
+				cube.set_up_match_color(sitenum, match_color)
 
 			if has_unsure_sites: # break out of for loop if a site was not matched very well
 				print 'Breaking for unsure sites.'
 				break
 			elif self._pause_each_face: # break out of loop if set to pause for each site
-				self.ids.scan_status.text = 'Check each color to make sure I matched\nit correctly. Then click Continue.'
+				self.ids.scan_status.text = 'Check each color to make sure it was matched\n correctly. Then click Continue.'
 				self._scan_index = index + 1
 				print 'Breaking for pause each face'
-			# face has been scanned and there are no unsure sites
+				
+			# face has been scanned and there are no unsure sites, so we can set this face color
 			match_color, detla_e = find_closest_color(face_colors[4], app.colors)
 			print 'Index %i: Setting face %s face_color to %s' % (index, up_face, match_color)
 			cube.set_face_color(up_face, match_color)
 			print 'Finished scanning %i.' % index
 
 		# If we get this far, all sides have been processed and face colors have been set.
-		# Now cube can set its own cube_colors
 		if not has_unsure_sites:
-			if cube.dup_face_colors():
+			cube.set_cube_colors() # Now cube can set its own cube_colors
+			if cube.set_solve_string() < 0: # returns error code if solve string is not valid
 				self.ids.scan_status.text = 'Oops. I don\'t think I got that scan right.\nLet\'s re-scan and check every color.'
 				self.ids.btn_next.text = 'Re-Scan'
 				self._pause_each_face = True
+				self.on_enter()
 			else:
 				#cube.set_cube_colors()
 				print '*****Done scanning!*****'
@@ -302,10 +308,10 @@ class RubikSolverApp(App):
 	twist_b_config = {}
 	colors = {}
 	crop_size = NumericProperty()
-	crop_center = ListProperty([None for i in xrange(3)])
+	crop_center = ListProperty([None for i in range(3)])
 	site_size = NumericProperty()
-	site_center_x = ListProperty([None for i in xrange(9)])
-	site_center_y = ListProperty([None for i in xrange(9)])
+	site_center_x = ListProperty([None for i in range(9)])
+	site_center_y = ListProperty([None for i in range(9)])
 
 	def build(self):
 		self.get_config()
@@ -359,9 +365,9 @@ class RubikSolverApp(App):
 
 		self.site_size = config.getint('Sites', 'size')
 
-		site_list = [None for i in xrange(10)]
+		site_list = [None for i in range(10)]
 		site_list[0] = self.site_size
-		for i in xrange(9):
+		for i in range(9):
 			self.site_center_x[i] = config.getint('Sites', 'center' + str(i+1) + '_x')
 			self.site_center_y[i] = config.getint('Sites', 'center' + str(i+1) + '_y')
 			site_list[i+1] = (self.site_center_x[i], self.site_center_y[i])

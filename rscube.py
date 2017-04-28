@@ -1,5 +1,6 @@
 #from kociemba import solve
 from PIL import Image, ImageStat
+import time
 #import RPi.GPIO as GPIO
 
 PINS = {
@@ -185,21 +186,45 @@ testimages = [
 	'testimg/bface.jpg'
 ]
 
+PATTERNS = [
+	['Checkerboard',         'checkerboard.jpg',             'UFUFUFUFURURURURURFRFRFRFRFDBDBDBDBDLDLDLDLDLBLBLBLBLB'],
+	['Easy Checkerboard',    'easy-checkerboard.jpg',        'UDUDUDUDURLRLRLRLRFBFBFBFBFDUDUDUDUDLRLRLRLRLBFBFBFBFB'],
+	['Wire',                 'wire.jpg',                     'UUUUUUUUURLLRRRLLRBBFFFFFBBDDDDDDDDDLRRLLLRRLFFBBBBBFF'],
+	['Tablecloth',           'tablecloth.jpg',               'BFBRURBFBRURURURURURUBFBURUFBFLDLFBFLDLDLDLDLDLDFBFDLD'],
+	['Spiral',               'spiral.jpg',                   'FFFFUFFUURRUURUUUURRFRFFRRRBBBBDBDDBDDDDLDLLDLLLLBBLLB'],
+	['Vertical Stripes',     'vertical-stripes.jpg',         'UUUUUUUUUBRFBRFBRFLFRLFRLFRDDDDDDDDDFLBFLBFLBRBLRBLRBL'],
+	['Opposite Corners',     'opposite-corners.jpg',         'DDDDUDDDDLRRRRRRRLBFFFFFFFBUUUUDUUUURLLLLLLLRFBBBBBBBF'],
+	['Cross',                'cross.jpg',                    'DUDUUUDUDFRFRRRFRFRFRFFFRFRUDUDDDUDUBLBLLLBLBLBLBBBLBL'],
+	['Cross 2',              'cross2.jpg',                   'RURUUURURFRFRRRFRFUFUFFFUFULDLDDDLDLBLBLLLBLBDBDBBBDBD'],
+	['Cube in cube',         'cube-in-cube.jpg',             'FFFFUUFUURRURRUUUURFFRFFRRRBBBDDBDDBDDDLLDLLDLLLLBBLBB'],
+	['Cube in cube in cube', 'cube-in-a-cube-in-a-cube.jpg', 'RRRRUURUFURFRRFFFFUFRUFFUUULLLDDLBDLBBBLLBDLBDDDDBBDBL'],
+	['Anaconda',             'anaconda.jpg',                 'FUFUUFFFFUUUURRURURRRFFRRFRBDBBDDBBBDLDDLLDDDLBLBBLLLL'],
+	['Python',               'python.jpg',                   'DUDDUDDUDFFFFRRFRFRFRFFRRRRUUUDDDUUUBBBBLLBLBLBLBBLLLL'],
+	['Black Mamba',          'black-mamba.jpg',              'RURUURRRRBBBRRRBBBDDDFFFDDDLLLDDLLDLFLFFLLFFFUBUUBUUBU'],
+	['Green Mamba',          'green-mamba.jpg',              'RRRUUURRRBBBRRRBBBDDDFFFDDDLLLDDLLDLFLFFLLFFFUUUBBUUBU'],
+	['Four Spots',           'four-spots.jpg',               'UUUUUUUUULLLLRLLLLBBBBFBBBBDDDDDDDDDRRRRLRRRRFFFFBFFFF'],
+	['Six Spots',            'six-spots.jpg',                'FFFFUFFFFUUUURUUUURRRRFRRRRBBBBDBBBBDDDDLDDDDLLLLBLLLL'],
+	['Twister',              'twister.jpg',                  'RURRUURUURRFRRFFRFUFFFFFUUULLLDDDDDLBBBLLLLLBDBDDBBDBB'],
+	['Center Edge Corner',   'center-edge-corner.jpg',       'RFRFUFRFRFUFURUFUFURURFRURULBLBDBLBLBDBDLDBDBDLDLBLDLD'],
+	['Tetris',               'tetris.jpg',                   'FFBFUBFBBUDDURDUUDRLLRFLRRLBBFBDFBFFUDDULDUUDLRRLBRLLR'],
+	['Facing Checkerboards', 'facing-checkerboards.jpg',     'UUUUUUUUURLRLRLRLRFFFFFFFFFDDDDDDDDDLRLRLRLRLBBBBBBBBB']
+]
+
 class MyCube(object):
 
 	def __init__(self, site_center_x, site_center_y, site_size, crop_center, crop_size, grip_a, twist_a, grip_b, twist_b):
-		self._raw_colors = [[None for i in range(9)] for j in range(6)] # luminance for each raw color found on cube
-		self._face_colors = [None for i in range(6)] # color of the center site on each face
-		self._cube_colors = [[None for i in range(9)] for j in self._face_colors] # letter for corresponding face color for each site on cube
-		self._cube_def = None # string representing cube in order U1U2U3...R1...F1...etc
+		self._raw_colors = [[None for i in range(9)] for j in range(6)] # r, g, b for each raw color found on cube
+		self._face_colors = [None for i in range(6)] # matched color of the center site on each face
+		self._match_colors = [[None for i in range(9)] for j in self._face_colors] # matched color for each site
+		self._cube_colors = [[None for i in range(9)] for j in self._face_colors] # letter for corresponding face_color for each site on cube
 		self.solve_to = None # string representing cube solve pattern, None to solve to standard
 		self._solve_string = None # instructions to solve cube
 
 		self._grip_state = {'A': None, 'B': None}
 
-		site_list = [None for i in xrange(10)] # site_rects expects list of 10, 0 is size, 1-9 are (x,y) tuples
+		site_list = [None for i in range(10)] # site_rects expects list of 10, 0 is size, 1-9 are (x,y) tuples
 		site_list[0] = site_size
-		for i in xrange(9):
+		for i in range(9):
 			site_list[i+1] = (site_center_x[i], site_center_y[i])
 		self.site_rects = site_list
 
@@ -226,9 +251,9 @@ class MyCube(object):
 
 	@site_rects.setter
 	def site_rects(self, site_config):
-		self._site_rects = [None for i in xrange(9)]
+		self._site_rects = [None for i in range(9)]
 		size = site_config[0]
-		for i in xrange(1, 10):
+		for i in range(1, 10):
 			l = site_config[i][0] - size / 2
 			r = site_config[i][0] + size / 2
 			t = site_config[i][1] - size / 2
@@ -259,11 +284,11 @@ class MyCube(object):
 		self._solve_to = pattern
 
 	def scan_face(self):
-		'''
+		"""
 		Gets image from camera, crops and gets average (mean) colors
 		in each region, and stores in _raw_colors.
 		Returns list of colors on this face for uix
-		'''
+		"""
 		logo_threshold = 8
 
 		face = FACES[self._orientation[0]]
@@ -279,7 +304,7 @@ class MyCube(object):
 		#print 'Processing face', face, rot # DEBUG
 
 		# loop through each site and store its raw color
-		for sitenum in xrange(1, 10):
+		for sitenum in range(1, 10):
 			abs_sitenum = ROT_TABLE[rot][sitenum - 1] # get unrotated site number
 			site = img.crop(self._site_rects[sitenum - 1]) # crop the img so only the site is left
 			if self._raw_colors[face][abs_sitenum - 1] is None: # if it hasn't already been set
@@ -289,42 +314,57 @@ class MyCube(object):
 		for i in ROT_TABLE[rot]:
 			ret_colors.append(self._raw_colors[face][i - 1])
 		return ret_colors # returns rotated list of raw_colors
+		
+	def get_abs_site(self, site_r):
+		"""
+		Transposes site numbers given up_face rotation. Returns unrotated site number given rotated site.
+		"""
+		return ROT_TABLE[UP_FACE_ROT[self._orientation]][site_r - 1]
 	
 	def set_face_color(self, f, color):
-		'''
-		Sets face colors in the order URFDLB
-		'''
+		"""
+		Sets face color of face f
+		"""
 		face = str(f)
 		if not face.isdigit():
 			face = FACES[face]
 		self._face_colors[face] = color
 	
-	def dup_face_colors(self):
-		'''
-		Returns true if there are duplicate face colors
-		'''
-		if len(self._face_colors) > len(set(self._face_colors)): # if there are dups
-			return True
-		else:
-			return False
-
 	def get_solve_string(self):
-		'''
+		"""
 		Gets the solve string
-		'''
+		"""
 		return self._solve_string
 
 	def set_solve_string(self):
-		'''
+		"""
 		Sets the solve string from kociemba
-		'''
-		#self._solve_string = solve(self._cube_def) # TODO allow solve to pattern also
-		self._solve_string = None
+		"""
+		cubedef = self.get_cube_def()
+		print self._cube_colors, cubedef
+		#self._solve_string = solve(cube_def) # TODO allow solve to pattern also
+		self._solve_string = ''
+		return 0
+		
+	def set_cube_colors(self):
+		"""
+		Sets each site to letter representing face color
+		"""
+		for f in range(6):
+			for s in range(9):
+				self._cube_colors[f][s] = FACES_STR[self._face_colors.index(self._match_colors[f][s])]
+		print self._cube_colors
+	
+	def get_cube_def(self):
+		"""
+		Returns cube_def in the form UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB
+		"""
+		return ''.join(str(site) for sitelist in self._cube_colors for site in sitelist)
 
 	def get_pos(self, servo_pin):
-		'''
+		"""
 		Function to get current position of servo
-		'''
+		"""
 		# TODO read input pin for servo position
 		# pos = GPIO.input(servo_pin)
 		pos = 90 # debug
@@ -332,41 +372,48 @@ class MyCube(object):
 		return pos
 
 	def get_up_face(self):
-		'''
+		"""
 		Returns string representing current up face
-		'''
+		"""
 		return FACES_STR[FACE_POSITION[self._orientation][U]]
 
 	def get_up_rot(self):
-		'''
+		"""
 		Returns current rotation of up_face
-		'''
+		"""
 		return UP_FACE_ROT[self._orientation]
 
-	def get_up_raw_color(self, sitenum):
-		'''
-		Returns the raw color for site sitenum on upface
-		'''
-		sitenum = int(sitenum) - 1 # sites in range 0-8
+	def get_up_raw_color(self, site_r):
+		"""
+		Returns the raw color for site site_r on upface. Transposes if necessary for rotated face
+		"""
+		sitenum = int(site_r)
 		upface = FACES[self.get_up_face()]
-		return self._raw_colors[upface][sitenum]
+		s = self.get_abs_site(sitenum)
+		return self._raw_colors[upface][s - 1]
 
-	def set_up_raw_color(self, sitenum, rawcolor):
-		'''
-		Sets the raw color for site sitenum on upface. Sitenum needs to be transposed for upface rotation
-		'''
-		rot = UP_FACE_ROT[self._orientation]
-		rot_sitenum = int(sitenum) - 1 # sites in range 0-8
-		sitenum = ROT_TABLE[rot][rot_sitenum] - 1
+	def set_up_raw_color(self, site_r, rawcolor):
+		"""
+		Sets the raw color for site site_r on upface. site_r needs to be transposed for upface rotation
+		"""
+		sitenum = self.get_abs_site(int(site_r))
 		upface = FACES[self.get_up_face()]
-		self._raw_colors[upface][sitenum] = rawcolor
+		self._raw_colors[upface][sitenum - 1] = rawcolor
+		
+	def set_up_match_color(self, site_r, color):
+		"""
+		Sets matched color on up_face for given (possibly) rotated site_r
+		"""
+		upface = FACES[self.get_up_face()]
+		s = self.get_abs_site(site_r)
+		self._match_colors[upface][s - 1] = color
 
 	def grip(self, gripper, cmd):
-		'''
+		"""
 		Function to open or close gripper
 		gripper = 'A' or 'B'
 		cmd = 'o' 'c' or 'l' for load
-		'''
+		"""
 		temp = ''
 		if cmd == 'o':
 			temp = 'Open'
@@ -379,11 +426,11 @@ class MyCube(object):
 		print '%s gripper %s' % (temp, gripper)
 
 	def twist(self, gripper, dir):
-		'''
+		"""
 		Function to twist gripper
 		gripper = 'A' or 'B'
 		dir = '+' 90-deg CW, '-' 90-deg CCW
-		'''
+		"""
 		o = self._orientation
 
 		other_gripper = 'B' if gripper == 'A' else 'A'
@@ -395,12 +442,12 @@ class MyCube(object):
 		print 'Twist gripper %s %s Orientation: %s' % (gripper, dir, self._orientation)
 
 	def move_face_for_twist(self, face_to_move, to_gripper = None):
-		'''
+		"""
 		Will position face_to_move to gripper A or B depending on fewest moves.
 		Moves face to chosen gripper, and updates cube orientation.
 		If gripper passed as arg face_to_move will be positioned to input gripper.
 		Returns chosen gripper
-		'''
+		"""
 		moves = None
 		o = self._orientation
 		print o

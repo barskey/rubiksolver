@@ -50,9 +50,9 @@
 			rgb: 0, 0, 0
 		Rectangle:
 			pos: self.pos
-			size: 34, 34
+			size: app.site_size + 4, app.site_size + 4
 	size_hint: None, None
-	size: 34, 34
+	size: app.site_size + 4, app.site_size + 4
 
 <Scan>:
 	name: 'scan'
@@ -79,7 +79,7 @@
 		
 		Label:
 			id: scan_status
-			text: 'NOTE:\nFix incorrect colors then Continue.'
+			text: ''
 			halign: 'center'
 			font_size: 16
 			color: (0, 1, 0, 1)
@@ -220,13 +220,13 @@
 				Label:
 					text: 'Size'
 					bold: True
-					pos: -210, 100
+					pos: -175, 100
 				Slider:
 					id: site_slider
 					orientation: 'vertical'
 					size_hint: None, None
 					height: 180
-					pos: -15, 50
+					pos: 15, 50
 					range: (6, 50)
 					step: 2
 					value: app.site_size

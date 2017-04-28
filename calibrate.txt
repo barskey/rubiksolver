@@ -4,13 +4,13 @@ center_y = 122
 size = 182
 
 [Sites]
-size = 32
+size = 28
 center1_x = 33
-center1_y = 29
+center1_y = 30
 center2_x = 92
 center2_y = 32
 center3_x = 150
-center3_y = 33
+center3_y = 32
 center4_x = 33
 center4_y = 87
 center5_x = 95
@@ -26,7 +26,7 @@ center9_y = 152
 
 [GripA]
 open = -4
-closed = 4
+closed = 8
 load = 19
 
 [GripB]
@@ -51,6 +51,6 @@ red = 123,38,38
 white = 180,190,190
 blue = 8,44,95
 yellow = 175,162,43
-green = 1,70,29
+green = 1,70,297
 orange = 255,128,0
 
