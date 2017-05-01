@@ -330,6 +330,17 @@ class MyCube(object):
 			face = FACES[face]
 		self._face_colors[face] = color
 	
+	def check_face_colors(self):
+		"""
+		Checks that each face has a color assigned and that they are unique
+		"""
+		if None in self._face_colors:
+			return False
+		elif len(self._face_colors) > len(set(self._face_colors)):
+			return False
+		else:
+			return True
+	
 	def get_solve_string(self):
 		"""
 		Gets the solve string

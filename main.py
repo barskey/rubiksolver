@@ -285,9 +285,18 @@ class Scan(Screen):
 			cube.set_face_color(up_face, match_color)
 			print 'Finished scanning %i.' % index
 
-		# If we get this far, all sides have been processed and face colors have been set.
-		if not has_unsure_sites:
-			cube.set_cube_colors() # Now cube can set its own cube_colors
+		if not has_unsure_sites: # finish scan_cube if still has unsure sites
+			# If we get this far, all sides have been processed and face colors have been set.
+			# check that all faces have a unique color before setting cube colors
+			if not cube.check_face_colors():
+				self.ids.scan_status.text = 'Center colors aren\'t correct. Double-check each center color.'
+				self._scan_index = 0
+				self._pause_each_face = True
+				print 'Check_face_colors returned false'
+				return
+			else:
+				cube.set_cube_colors() # Now cube can set its own cube_colors
+
 			if cube.set_solve_string() < 0: # returns error code if solve string is not valid
 				self.ids.scan_status.text = 'Oops. I don\'t think I got that scan right.\nLet\'s re-scan and check every color.'
 				self.ids.btn_next.text = 'Re-Scan'
