@@ -214,8 +214,8 @@ class MyCube(object):
 
 	def __init__(self, site_center_x, site_center_y, site_size, crop_center, crop_size, grip_a, twist_a, grip_b, twist_b):
 		self._raw_colors = [[None for i in range(9)] for j in range(6)] # r, g, b for each raw color found on cube
-		self._face_colors = [None for i in range(6)] # matched color of the center site on each face
-		self._match_colors = [[None for i in range(9)] for j in self._face_colors] # matched color for each site
+		self._face_colors = [None for i in range(6)] # matched color of the center site on each face e.g. red, blue, etc.
+		self._match_colors = [[None for i in range(9)] for j in self._face_colors] # matched color for each site e.g. red, blue, etc.
 		self._cube_colors = [[None for i in range(9)] for j in self._face_colors] # letter for corresponding face_color for each site on cube
 		self.solve_to = None # string representing cube solve pattern, None to solve to standard
 		self._solve_string = None # instructions to solve cube
@@ -307,8 +307,7 @@ class MyCube(object):
 		for sitenum in range(1, 10):
 			abs_sitenum = ROT_TABLE[rot][sitenum - 1] # get unrotated site number
 			site = img.crop(self._site_rects[sitenum - 1]) # crop the img so only the site is left
-			if self._raw_colors[face][abs_sitenum - 1] is None: # if it hasn't already been set
-				self._raw_colors[face][abs_sitenum - 1] = ImageStat.Stat(site).mean # store the mean color in _raw_colors
+			self._raw_colors[face][abs_sitenum - 1] = ImageStat.Stat(site).mean # store the mean color in _raw_colors
 
 		ret_colors = []
 		for i in ROT_TABLE[rot]:
@@ -321,14 +320,14 @@ class MyCube(object):
 		"""
 		return ROT_TABLE[UP_FACE_ROT[self._orientation]][site_r - 1]
 	
-	def set_face_color(self, f, color):
+	def set_face_colors(self):
 		"""
-		Sets face color of face f
+		Sets face color for all faces.
+		Should be run after check_all_sites returns True
 		"""
-		face = str(f)
-		if not face.isdigit():
-			face = FACES[face]
-		self._face_colors[face] = color
+		for face, colors in enumerate(self._match_colors):
+			self._face_colors[face] = colors[4]
+		print self._face_colors # debug
 	
 	def check_face_colors(self):
 		"""
@@ -340,6 +339,41 @@ class MyCube(object):
 			return False
 		else:
 			return True
+			
+	def check_face_matched(self, f):
+		"""
+		Checks that each site on a face has a matched color
+		"""
+		face = str(f)
+		if not face.isdigit():
+			face = FACES[face]
+		if None in self._match_colors[face]:
+			return False
+		else:
+			return True
+	
+	def clear_matched(self):
+		"""
+		Clears all matched sites on all faces for a re-scan_face
+		"""
+		self._match_colors = [[None for i in range(9)] for j in self._face_colors]
+		return
+	
+	def check_all_sites(self):
+		"""
+		Checks that there are exactly 9 of each match_color.
+		"""
+		colors = []
+		for face in self._match_colors:
+			for color in face:
+				if color not in colors:
+					colors.append(color)
+		print colors
+		for color in colors:
+			print sum(f.count(color) for f in self._match_colors)
+			if sum(f.count(color) for f in self._match_colors) != 9:
+				return False
+		return True
 	
 	def get_solve_string(self):
 		"""
@@ -352,7 +386,7 @@ class MyCube(object):
 		Sets the solve string from kociemba
 		"""
 		cubedef = self.get_cube_def()
-		print self._cube_colors, cubedef
+		print cubedef # debug
 		#self._solve_string = solve(cube_def) # TODO allow solve to pattern also
 		self._solve_string = ''
 		return 0
@@ -364,7 +398,7 @@ class MyCube(object):
 		for f in range(6):
 			for s in range(9):
 				self._cube_colors[f][s] = FACES_STR[self._face_colors.index(self._match_colors[f][s])]
-		print self._cube_colors
+		print self._cube_colors # debug
 	
 	def get_cube_def(self):
 		"""
@@ -486,7 +520,8 @@ class MyCube(object):
 			else:
 				moves = moves_b # moves to gripper B
 				to_gripper = 'B'
-		print 'Moving face %i to gripper %s' % (face, to_gripper)
+		if len(moves) > 0:
+			print 'Moving face %i to gripper %s' % (face, to_gripper)
 
 		# perform the moves (if any)
 		for move in moves:

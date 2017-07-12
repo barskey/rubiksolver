@@ -96,6 +96,40 @@
 			pos: root.width - self.width - 10, 10
 			on_release: root.scan_cube()
 
+<Solve>:
+	name: 'solve'
+
+	FloatLayout:
+		id: solve_float
+		
+		RelativeLayout:
+			id: solve_rel
+
+			size_hint: None, None
+			size: app.crop_size, app.crop_size
+			pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+			Image:
+				id: solve_img
+		
+		Label:
+			id: solve_status
+			text: ''
+			halign: 'center'
+			font_size: 16
+			color: (0, 1, 0, 1)
+			size_hint: None, None
+			pos: root.width / 2 - self.width / 2, root.height - self.height / 2 - 20
+			
+		Button:
+			id: btn_solve
+			text: 'Solve'
+			size_hint: None, None
+			bold: True
+			background_color: [0, 1, 0, 1]
+			size: 100, 40
+			pos: root.width - self.width - 10, 10
+			on_release: print 'Solve!'
+			
 <DragBox>:
 	canvas:
 		Color:

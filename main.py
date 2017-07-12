@@ -19,6 +19,7 @@ from colormath.color_diff import delta_e_cie2000
 from PIL import Image as PILImage
 import ConfigParser
 import time
+from functools import partial
 
 import rscube
 
@@ -127,10 +128,12 @@ class ColorBox(Label):
 				App.get_running_app().sm.get_screen('scan').site_touched(self)
 			return True
 
+class Solve(Screen):
+	pass
+			
 class Scan(Screen):
 	_sites = {}
 	_fix_color = None
-	_pause_each_face = False
 
 	def on_pre_enter(self):
 		x = 30
@@ -151,7 +154,7 @@ class Scan(Screen):
 		App.get_running_app().mycube.grip('A', 'c')
 		App.get_running_app().mycube.grip('B', 'c')
 
-		self._scan_index = 0 # reset scan index
+		self._index = 0 # for SCANCUBE list
 		self.scan_cube() # begin scanning cube
 
 	def site_touched(self, site):
@@ -166,10 +169,17 @@ class Scan(Screen):
 				Rectangle(size=(site.size[0] - 4, site.size[1] - 4), pos=(site.pos[0] + 2, site.pos[1] + 2))
 
 			app = App.get_running_app()
+			cube = app.mycube
 			sitenum = site.id[-1] # site number of corrected site
 
 			raw_color = app.colors[self._fix_color.id] # get raw color corresponding to new color
-			app.mycube.set_up_raw_color(sitenum, raw_color) # set raw_color for this site on cube object
+			cube.set_up_raw_color(sitenum, raw_color) # set raw_color for this site on cube object
+			cube.set_up_match_color(int(sitenum), self._fix_color.id) # set match_color for this site on cube object
+			print 'Set site %s match_color to %s.' % (sitenum, self._fix_color.id)
+			
+			# enable the button if all the sites on this face have been matched
+			if cube.check_face_matched(cube.get_up_face()[0]):
+				self.ids.btn_next.disabled = False
 
 	def color_touched(self, color):
 		if self._fix_color is not None:
@@ -191,123 +201,163 @@ class Scan(Screen):
 			Rectangle(size=(30, 30), pos=(color.pos[0] + 2, color.pos[1] + 2))
 
 	def scan_cube(self):
+		"""
+		Calls scan_face for each face. Gets called when scan is good or button is touched.
+		"""
 		app = App.get_running_app()
 		cube = app.mycube
 
-		for index, tup in enumerate(SCANCUBE): # loop 6 times to scan each face
-			if self._scan_index > index: # skip loop until match where scanning left off
-				print 'skipping index %i' % index
-				continue
+		self.ids.btn_next.text = 'Next'
 
-			print 'Begin scanning %i.' % index
-			print 'Cube orientation: %s' % cube.orientation
-
-			# SCANCUBE contains instructions for moving face to to_gripper, specifically for initial cube scan
-			face, to_gripper = tup
-
-			# move cube to next face
-			print 'Preparing to move face %s to %s.' % (face, to_gripper)
-			cube.move_face_for_twist(face, to_gripper) # move face to prep for scan
-
-			up_face = cube.orientation[0] # get current up face
-			rot = cube.get_up_rot() # get current rotation of up face
-			self.ids.scan_status.text = 'Scanning face ' + up_face
-
-			# get and update image
-			pimg = PILImage.open(rscube.testimages[rscube.FACES[up_face]])
-			cimg = crop_pil_img(pimg, app.crop_center, app.crop_size)
-			cimg.save('tmp.jpg')
-
-			img = self.ids.scan_img
-			img.source = 'tmp.jpg'
-			img.size = (app.crop_size, app.crop_size)
-			img.reload()
-
-			# scan face
-			face_colors = cube.scan_face() # scans face in up position and receives list of colors in sites 1-9 wrt current orientation of cube
-
-			has_unsure_sites = False # flag to identify when a site isn't matched very well
-
-			for sitenum in range(1, 10): # for each site 1 thru 9
-				#print 'starting %i' % sitenum
-				site_name = 'center' + str(sitenum)
-				pos = app.center_to_ll((app.site_center_x[sitenum - 1], app.site_center_y[sitenum - 1]), (app.crop_size, app.crop_size), app.site_size, True) # get position of this site
-
-				color = face_colors[sitenum - 1] # color in this site
-
-				# get site box for this sitenum
-				site = None
-				if site_name in self._sites:
-					site = self._sites[site_name]
-				else:
-					site = ColorBox(id=site_name)
-					self._sites[site_name] = site
-					self.ids.scan_rel.add_widget(site)
-
-				site.pos = pos # set site position
-
-				# check against each config face color to find a match
-				match_color, delta_e = find_closest_color(color, app.colors)
-				#print match_color, delta_e
-
-				outline_color = (0, 0, 0) # start with a black outline
-				# If delta_e is not very low, must not be good match. Flag this face for manual correction
-				if delta_e > THRESHOLD:
-					has_unsure_sites = True
-					print 'Unsure site found at %i' % sitenum
-					self._scan_index = index
-					outline_color = (1.0, 0.5, 1.0) # give it a pink outline if unsure
-					self.ids.scan_status.text = 'Not all sites were matched.\nFix highlighted sites and Continue.'
-
-				# draw box with matched color
-				with site.canvas:
-					r, g, b = outline_color
-					Color(r, g, b)
-					Rectangle(size=site.size, pos=pos)
-					r, g, b = COLORS[match_color]
-					Color(r, g, b)
-					Rectangle(size=(site.size[0] - 4, site.size[1] - 4), pos=(site.pos[0] + 2, site.pos[1] + 2))
-				
-				# set match_color to this site on this face
-				cube.set_up_match_color(sitenum, match_color)
-
-			if has_unsure_sites: # break out of for loop if a site was not matched very well
-				print 'Breaking for unsure sites.'
-				break
-			elif self._pause_each_face: # break out of loop if set to pause for each site
-				self.ids.scan_status.text = 'Check each color to make sure it was matched\n correctly. Then click Continue.'
-				self._scan_index = index + 1
-				print 'Breaking for pause each face'
-				
-			# face has been scanned and there are no unsure sites, so we can set this face color
-			match_color, detla_e = find_closest_color(face_colors[4], app.colors)
-			print 'Index %i: Setting face %s face_color to %s' % (index, up_face, match_color)
-			cube.set_face_color(up_face, match_color)
-			print 'Finished scanning %i.' % index
-
-		if not has_unsure_sites: # finish scan_cube if still has unsure sites
-			# If we get this far, all sides have been processed and face colors have been set.
-			# check that all faces have a unique color before setting cube colors
-			if not cube.check_face_colors():
-				self.ids.scan_status.text = 'Center colors aren\'t correct. Double-check each center color.'
-				self._scan_index = 0
-				self._pause_each_face = True
-				print 'Check_face_colors returned false'
-				return
+		if self._index < 6:
+			good_scan = self.scan_face(self._index)
+			if good_scan:
+				# increment the index for the next face and scan next face
+				self._index = self._index + 1
+				self.scan_cube()
 			else:
+				self.ids.scan_status.text = 'Use the colors on the left to\nfix the boxes shown in pink.'
+				self.ids.scan_status.color = (1, 0, 0, 1)
+				self.ids.btn_next.disabled = True
+				# increment the index for the next face when button is enabled
+				self._index = self._index + 1
+		else:
+			# move U back to top
+			print 'Move face U back to top'
+			print 'Moving face %s to %s.' % ('F', 'A')
+			cube.move_face_for_twist('F', 'A') # move face to get back to original position
+			print 'Moving face %s to %s.' % ('D', 'B')
+			cube.move_face_for_twist('D', 'B') # move face to get back to original position
+			print cube.orientation # debug
+			
+			# If we get this far, all sides have been processed and face colors have been set.
+			# Check that there are exactly 9 of each color
+			if cube.check_all_sites():
+				cube.set_face_colors() # cube can set its own face_colors
+			else:
+				self.ids.scan_status.text = 'I didn\'t count exactly 9 of each color.\nLet\'s try scanning again.'
+				self.ids.scan_status.color = (1, 0, 0, 1)
+				self.ids.btn_next.text = 'Re-Scan'
+				print 'check_all_sites returned False'
+				cube.clear_matched() # clear the matched colors so we can start over
+				self._index = 0
+				return
+				
+			# Now check that all faces have a unique color before setting cube colors.
+			if cube.check_face_colors():
 				cube.set_cube_colors() # Now cube can set its own cube_colors
+			else:
+				self.ids.scan_status.text = 'Center colors aren\'t correct.\nLet\'s try scanning again.'
+				self.ids.scan_status.color = (1, 0, 0, 1)
+				self.ids.btn_next.text = 'Re-Scan'
+				print 'Check_face_colors returned False'
+				cube.clear_matched() # clear the matched colors so we can start over
+				self._index = 0
+				return
 
+			# Now check that cube can generate a solve string.
 			if cube.set_solve_string() < 0: # returns error code if solve string is not valid
 				self.ids.scan_status.text = 'Oops. I don\'t think I got that scan right.\nLet\'s re-scan and check every color.'
+				self.ids.scan_status.color = (1, 0, 0, 1)
 				self.ids.btn_next.text = 'Re-Scan'
-				self._pause_each_face = True
-				self.on_enter()
+				print 'set_solve_string returned non-zero'
+				cube.clear_matched() # clear the matched colors so we can start over
+				self._index = 0
 			else:
 				#cube.set_cube_colors()
 				print '*****Done scanning!*****'
-				self.ids.btn_next.text = 'Next'
-				self.ids.scan_status.text = 'Scanning complete.\nClick Next to continue.'
+				self.ids.scan_status.text = 'Scanning complete!'
+				self.ids.scan_status.color = (0, 1, 0, 1)
+				self.ids.btn_next.text = 'Done'
+				app.go_screen('solve', 'left')
+	
+	def scan_face(self, index):
+		"""
+		Moves face according to instructions in SCANCUBE, then scans face.
+		Returns False if any unsure sites, otherwise True.
+		"""
+		app = App.get_running_app()
+		cube = app.mycube
 
+		print '-------------------------'
+		print 'Begin scanning %i.' % index
+		print 'Cube orientation: %s' % cube.orientation
+
+		# SCANCUBE contains instructions for moving face to to_gripper, specifically for initial cube scan
+		face, to_gripper = SCANCUBE[index]
+
+		# move cube to next face
+		print 'Moving face %s to %s.' % (face, to_gripper)
+		cube.move_face_for_twist(face, to_gripper) # move face to prep for scan
+
+		up_face = cube.orientation[0] # get current up face
+		rot = cube.get_up_rot() # get current rotation of up face
+		self.ids.scan_status.text = 'Scanning face ' + up_face
+
+		# get and update image
+		pimg = PILImage.open(rscube.testimages[rscube.FACES[up_face]])
+		cimg = crop_pil_img(pimg, app.crop_center, app.crop_size)
+		cimg.save('tmp.jpg')
+
+		img = self.ids.scan_img
+		img.source = 'tmp.jpg'
+		img.size = (app.crop_size, app.crop_size)
+		img.reload()
+
+		# scan face
+		face_colors = cube.scan_face() # scans face in up position and receives list of colors in sites 1-9 wrt current orientation of cube
+
+		has_unsure_sites = False # flag to identify when a site isn't matched very well
+
+		for sitenum in range(1, 10): # for each site 1 thru 9
+			#print 'starting %i' % sitenum # debug
+			site_name = 'center' + str(sitenum)
+			pos = app.center_to_ll((app.site_center_x[sitenum - 1], app.site_center_y[sitenum - 1]), (app.crop_size, app.crop_size), app.site_size, True) # get position of this site
+
+			color = face_colors[sitenum - 1] # color in this site
+
+			# get site box for this sitenum
+			site = None
+			if site_name in self._sites:
+				site = self._sites[site_name]
+			else:
+				site = ColorBox(id=site_name)
+				self._sites[site_name] = site
+				self.ids.scan_rel.add_widget(site)
+
+			site.pos = pos # set site position
+
+			# check against each config face color to find a match
+			match_color, delta_e = find_closest_color(color, app.colors)
+			#print match_color, delta_e # debug
+
+			outline_color = (0, 0, 0) # start with a black outline
+			# If delta_e is high, must not be good match. Flag this face for manual correction
+			if delta_e > THRESHOLD:
+				has_unsure_sites = True
+				print '** Unsure site found at %i' % sitenum
+				print color
+				outline_color = (1.0, 0.5, 1.0) # give it a pink outline if unsure
+			else:
+				# set match_color to this site on this face
+				cube.set_up_match_color(sitenum, match_color)
+
+			# draw box with matched color
+			with site.canvas:
+				r, g, b = outline_color
+				Color(r, g, b)
+				Rectangle(size=site.size, pos=pos)
+				r, g, b = COLORS[match_color]
+				Color(r, g, b)
+				Rectangle(size=(site.size[0] - 4, site.size[1] - 4), pos=(site.pos[0] + 2, site.pos[1] + 2))
+
+		if has_unsure_sites: # if one of the 9 sites was not matched very well
+			print '** Unsure site(s) when scanning face %s (index %i)' % (up_face, index)
+			return False
+		else: # face has been scanned and there are no unsure sites
+			print 'Finished scanning %i. GOOD SCAN.' % index
+			return True
+			
 class RubikSolverApp(App):
 
 	mycube = None
@@ -334,6 +384,7 @@ class RubikSolverApp(App):
 		self.sm.add_widget(MainMenu(name='home'))
 		self.sm.add_widget(Settings(name='settings'))
 		self.sm.add_widget(Scan(name='scan'))
+		self.sm.add_widget(Solve(name='solve'))
 
 		rs = RubikSolver()
 		rs.add_widget(self.sm)

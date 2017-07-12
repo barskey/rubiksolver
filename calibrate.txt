@@ -5,24 +5,24 @@ size = 182
 
 [Sites]
 size = 28
-center1_x = 33
+center1_x = 34
 center1_y = 30
-center2_x = 92
+center2_x = 91
 center2_y = 32
 center3_x = 150
 center3_y = 32
 center4_x = 33
 center4_y = 87
-center5_x = 95
-center5_y = 91
-center6_x = 152
-center6_y = 90
+center5_x = 92
+center5_y = 88
+center6_x = 150
+center6_y = 89
 center7_x = 29
 center7_y = 149
 center8_x = 90
-center8_y = 150
+center8_y = 149
 center9_x = 150
-center9_y = 152
+center9_y = 150
 
 [GripA]
 open = -4

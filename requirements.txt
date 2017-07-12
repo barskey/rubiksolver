@@ -1,5 +1,4 @@
 kivy
 kociemba
 pillow
-numpy
 colormath
