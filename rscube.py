@@ -368,9 +368,7 @@ class MyCube(object):
 			for color in face:
 				if color not in colors:
 					colors.append(color)
-		print colors
 		for color in colors:
-			print sum(f.count(color) for f in self._match_colors)
 			if sum(f.count(color) for f in self._match_colors) != 9:
 				return False
 		return True
@@ -479,12 +477,15 @@ class MyCube(object):
 		o = self._orientation
 
 		other_gripper = 'B' if gripper == 'A' else 'A'
-		if self._grip_state[gripper] == 'Load' or self._grip_state[other_gripper] == 'Load': # don't twist if either gripper is in load position
-			print 'Can\'t twist. Currently in load position'
+		if self._grip_state[gripper] == 'Load': # don't twist if gripper is in load position
+			print 'Can\'t twist %s. Currently in load position.' % gripper
+			return
+		if self._grip_state[other_gripper] == 'Load': # don't twist if other gripper is in load position
+			print 'Can\'t twist %s. Gripper %s currently in load position.' % (gripper, other_gripper)
 			return
 		if self._grip_state[other_gripper] == 'Open': # other gripper is open, so this twist moves cube and changes orientation
 			self._orientation = NEW_ORIENTATION_TWISTA[o][dir] if gripper == 'A' else NEW_ORIENTATION_TWISTB[o][dir]
-		print 'Twist gripper %s %s Orientation: %s' % (gripper, dir, self._orientation)
+		print 'Twist gripper %s %s New orientation: %s' % (gripper, dir, self._orientation)
 
 	def move_face_for_twist(self, face_to_move, to_gripper = None):
 		"""

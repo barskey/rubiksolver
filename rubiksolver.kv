@@ -102,18 +102,9 @@
 	FloatLayout:
 		id: solve_float
 		
-		RelativeLayout:
-			id: solve_rel
-
-			size_hint: None, None
-			size: app.crop_size, app.crop_size
-			pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-			Image:
-				id: solve_img
-		
 		Label:
 			id: solve_status
-			text: ''
+			text: 'Select a pattern to solve to:'
 			halign: 'center'
 			font_size: 16
 			color: (0, 1, 0, 1)
@@ -171,32 +162,64 @@
 				BoxLayout:
 					orientation: 'vertical'
 					Label:
-						text: 'Select face to twist:'
-					Spinner:
-						id: move_to_face
-						text: 'Up'
-						size_hint: (None, None)
-						size: (100, 40)
-						pos_hint: {'center_x': 0.5}
-						values: ('Up', 'Right', 'Front', 'Down', 'Left', 'Back')
+						text: 'Gripper A:     '
 					BoxLayout:
 						Button:
 							size_hint: (None, None)
-							size: (90, 40)
-							text: 'Twist CCW'
-							on_release:
-								gripper = app.move_cube(None, None, move_to_face.text[0])
-								app.move_cube(gripper, 'twist', '-')
+							size: (70, 40)
+							text: 'Open'
+							on_release: app.move_cube('A', 'grip', 'o')
 						Button:
 							size_hint: (None, None)
-							size: (90, 40)
+							size: (70, 40)
+							text: 'Close'
+							on_release: app.move_cube('A', 'grip', 'c')
+						Button:
+							size_hint: (None, None)
+							size: (70, 40)
+							text: 'Load'
+							on_release: app.move_cube('A', 'grip', 'l')
+					BoxLayout:
+						Button:
+							size_hint: (None, None)
+							size: (105, 40)
+							text: 'Twist CCW'
+							on_release: app.move_cube('A', 'twist', '-')
+						Button:
+							size_hint: (None, None)
+							size: (105, 40)
 							text: 'Twist CW'
-							on_release:
-								gripper = app.move_cube(None, None, move_to_face.text[0])
-								app.move_cube(gripper, 'twist', '+')
+							on_release: app.move_cube('A', 'twist', '+')
 					Label:
-						text: ''
-						size_hint: (None, None)
+						text: 'Gripper B:     '
+					BoxLayout:
+						Button:
+							size_hint: (None, None)
+							size: (70, 40)
+							text: 'Open'
+							on_release: app.move_cube('B', 'grip', 'o')
+						Button:
+							size_hint: (None, None)
+							size: (70, 40)
+							text: 'Close'
+							on_release: app.move_cube('B', 'grip', 'c')
+						Button:
+							size_hint: (None, None)
+							size: (70, 40)
+							text: 'Load'
+							on_release: app.move_cube('B', 'grip', 'l')
+					BoxLayout:
+						Button:
+							size_hint: (None, None)
+							size: (105, 40)
+							text: 'Twist CCW'
+							on_release: app.move_cube('B', 'twist', '-')
+						Button:
+							size_hint: (None, None)
+							size: (105, 40)
+							text: 'Twist CW'
+							on_release: app.move_cube('B', 'twist', '+')
+
 				Image:
 					size_hint: None, None
 					size: 200, 200
