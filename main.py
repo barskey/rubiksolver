@@ -2,20 +2,16 @@ from kivy.app import App
 from kivy.lang import Builder
 from kivy.config import Config
 from kivy.core.window import Window
+from kivy.graphics import *
+from kivy.properties import ListProperty, NumericProperty
+from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.slider import Slider
 from kivy.uix.label import Label
-from kivy.graphics import *
-from kivy.properties import ListProperty, NumericProperty, BooleanProperty
-#from kivy.uix.button import Button
+from kivy.uix.dropdown import DropDown
 from kivy.uix.image import Image as KvImage
-#from kivy.uix.behaviors import ButtonBehavior
-from kivy.uix.behaviors import DragBehavior, FocusBehavior
+from kivy.uix.behaviors import DragBehavior
 from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition, NoTransition
-from kivy.uix.recycleview import RecycleView
-from kivy.uix.recycleview.views import RecycleDataViewBehavior
-from kivy.uix.recycleboxlayout import RecycleBoxLayout
-from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 
 from colormath.color_objects import sRGBColor, LabColor
 from colormath.color_conversions import convert_color
@@ -132,44 +128,40 @@ class ColorBox(Label):
 				App.get_running_app().sm.get_screen('scan').site_touched(self)
 			return True
 
-class SelectableRecycleBoxLayout(FocusBehavior, LayoutSelectionBehavior, RecycleBoxLayout):
-    ''' Adds selection and focus behaviour to the view. '''
-
-class SelectableLabel(RecycleDataViewBehavior, Label):
-    ''' Add selection support to the Label '''
-    index = None
-    selected = BooleanProperty(False)
-    selectable = BooleanProperty(True)
-
-    def refresh_view_attrs(self, rv, index, data):
-        ''' Catch and handle the view changes '''
-        self.index = index
-        return super(SelectableLabel, self).refresh_view_attrs(
-            rv, index, data)
-
-    def on_touch_down(self, touch):
-        ''' Add selection on touch down '''
-        if super(SelectableLabel, self).on_touch_down(touch):
-            return True
-        if self.collide_point(*touch.pos) and self.selectable:
-            return self.parent.select_with_touch(self.index, touch)
-
-    def apply_selection(self, rv, index, is_selected):
-        ''' Respond to the selection of items in the view. '''
-        self.selected = is_selected
-        if is_selected:
-            print("selection changed to {0}".format(rv.data[index]))
-        else:
-            print("selection removed for {0}".format(rv.data[index]))
-
-class RV(RecycleView):
-    def __init__(self, **kwargs):
-        super(RV, self).__init__(**kwargs)
-        self.data = [{'text': str(x)} for x in range(100)]
-			
+class SelectDropdown(DropDown):
+	def on_select(self, data):
+		scr =  App.get_running_app().sm.get_screen('solve')
+		btn = scr.ids.btn_select
+		img = scr.ids.img_solve
+		
+		btn.text = data
+		scr.ids.solve_to.text = 'Solve to: %s' % data
+		if App.get_running_app().mycube.set_solve_string() >= 0:
+			moves = len(App.get_running_app().mycube.get_solve_string().split(' '))
+			scr.ids.moves_req.text = 'Moves required: %i' % moves
+		
+		newsrc = None
+		for newdata in rscube.PATTERNS:
+			if newdata[0] == data:
+				newsrc = 'data/' + newdata[1]
+		img.source = newsrc
+	
 class Solve(Screen):
-	pass
-			
+	def on_pre_enter(self):
+		img = self.ids.img_solve
+		img.source = 'data/_solid.jpg'
+	
+		self._dropdown = SelectDropdown()
+		for solution in rscube.PATTERNS:
+			btn = Button(text=solution[0], size_hint_y=None, height=40)
+			btn.bind(on_release=lambda btn: self._dropdown.select(btn.text))
+			self._dropdown.add_widget(btn)
+		
+		cube = App.get_running_app().mycube
+		self.ids.solve_to.text = 'Solve to: Solid Cube'
+		moves = len(cube.get_solve_string().split(' '))
+		self.ids.moves_req.text = 'Moves required: %i' % moves
+		
 class Scan(Screen):
 	_sites = {}
 	_fix_color = None
@@ -274,7 +266,7 @@ class Scan(Screen):
 			if cube.check_all_sites():
 				cube.set_face_colors() # cube can set its own face_colors
 			else:
-				self.ids.scan_status.text = 'I didn\'t count exactly 9 of each color.\nLet\'s try scanning again.'
+				self.ids.scan_status.text = "I didn't count exactly 9 of each color.\nLet's try scanning again."
 				self.ids.scan_status.color = (1, 0, 0, 1)
 				self.ids.btn_next.text = 'Re-Scan'
 				print 'check_all_sites returned False'
@@ -286,7 +278,7 @@ class Scan(Screen):
 			if cube.check_face_colors():
 				cube.set_cube_colors() # Now cube can set its own cube_colors
 			else:
-				self.ids.scan_status.text = 'Center colors aren\'t correct.\nLet\'s try scanning again.'
+				self.ids.scan_status.text = "Center colors aren't correct.\nLet's try scanning again."
 				self.ids.scan_status.color = (1, 0, 0, 1)
 				self.ids.btn_next.text = 'Re-Scan'
 				print 'Check_face_colors returned False'
@@ -296,7 +288,7 @@ class Scan(Screen):
 
 			# Now check that cube can generate a solve string.
 			if cube.set_solve_string() < 0: # returns error code if solve string is not valid
-				self.ids.scan_status.text = 'Oops. I don\'t think I got that scan right.\nLet\'s re-scan and check every color.'
+				self.ids.scan_status.text = "Oops. I don't think I got that scan right.\nLet's re-scan and check every color."
 				self.ids.scan_status.color = (1, 0, 0, 1)
 				self.ids.btn_next.text = 'Re-Scan'
 				print 'set_solve_string returned non-zero'

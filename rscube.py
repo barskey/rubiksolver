@@ -187,6 +187,7 @@ testimages = [
 ]
 
 PATTERNS = [
+	['Solid Cube',           '_solid.jpg',                   None],
 	['Checkerboard',         'checkerboard.jpg',             'UFUFUFUFURURURURURFRFRFRFRFDBDBDBDBDLDLDLDLDLBLBLBLBLB'],
 	['Easy Checkerboard',    'easy-checkerboard.jpg',        'UDUDUDUDURLRLRLRLRFBFBFBFBFDUDUDUDUDLRLRLRLRLBFBFBFBFB'],
 	['Wire',                 'wire.jpg',                     'UUUUUUUUURLLRRRLLRBBFFFFFBBDDDDDDDDDLRRLLLRRLFFBBBBBFF'],
@@ -386,7 +387,7 @@ class MyCube(object):
 		cubedef = self.get_cube_def()
 		print cubedef # debug
 		#self._solve_string = solve(cube_def) # TODO allow solve to pattern also
-		self._solve_string = ''
+		self._solve_string = "R' D2 R' U2 R F2 D B2 U' R F' U R2 D L2 D' B2 R2 B2 U' B2" # debug
 		return 0
 		
 	def set_cube_colors(self):

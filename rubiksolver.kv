@@ -103,14 +103,50 @@
 		id: solve_float
 		
 		Label:
-			id: solve_status
-			text: 'Select a pattern to solve to:'
+			text: 'Ready To Solve!'
 			halign: 'center'
-			font_size: 16
+			font_size: 18
+			bold: True
 			color: (0, 1, 0, 1)
 			size_hint: None, None
-			pos: root.width / 2 - self.width / 2, root.height - self.height / 2 - 20
-			
+			pos: root.width/2 - self.width/2, root.height - self.height/2 - 20
+		Label:
+			text: 'Solve to:'
+			bold: True
+			font_size: 16
+			color: (1, 1, 1, 1)
+			size_hint: None, None
+			pos: img_solve.x + 25, img_solve.y - 65
+		Button:
+			id: btn_select
+			text: 'Solid Cube'
+			size_hint: (None, None)
+			pos: img_solve.x, img_solve.y - 75
+			size: 150, 40
+			on_release: root._dropdown.open(self)
+		Image:
+			id: img_solve
+			size_hint: None, None
+			size: 140, 140
+			pos: root.width/2 - self.width/2 - 80, root.height/2 - self.height/2 + 20
+		Label:
+			id: solve_to
+			text: 'Solve to: Solid Cube'
+			font_size: 16
+			bold: True
+			color: (0, 1, 0, 1)
+			size_hint: None, None
+			size: 120, 20
+			pos: 260, 190
+		Label:
+			id: moves_req
+			text: 'Moves required: '
+			font_size: 16
+			bold: True
+			color: (0, 1, 0, 1)
+			size_hint: None, None
+			size: solve_to.size
+			pos: solve_to.x, solve_to.y - 30
 		Button:
 			id: btn_solve
 			text: 'Solve'
