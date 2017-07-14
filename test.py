@@ -1,77 +1,59 @@
+'''
+Bubble
+======
+
+Test of the widget Bubble.
+'''
+
 from kivy.app import App
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.button import Button
 from kivy.lang import Builder
-from kivy.uix.recycleview import RecycleView
-from kivy.uix.recycleview.views import RecycleDataViewBehavior
-from kivy.uix.label import Label
-from kivy.properties import BooleanProperty
-from kivy.uix.recycleboxlayout import RecycleBoxLayout
-from kivy.uix.behaviors import FocusBehavior
-from kivy.uix.recycleview.layout import LayoutSelectionBehavior
+from kivy.uix.bubble import Bubble
 
 Builder.load_string('''
-<SelectableLabel>:
-    # Draw a background to indicate selection
-    canvas.before:
-        Color:
-            rgba: (.0, 0.9, .1, .3) if self.selected else (0, 0, 0, 1)
-        Rectangle:
-            pos: self.pos
-            size: self.size
-<RV>:
-    viewclass: 'SelectableLabel'
-    SelectableRecycleBoxLayout:
-        default_size: None, dp(56)
-        default_size_hint: 1, None
-        size_hint_y: None
-        height: self.minimum_height
-        orientation: 'vertical'
-        multiselect: True
-        touch_multiselect: True
+<cut_copy_paste>
+    size_hint: (None, None)
+    size: (160, 120)
+    pos_hint: {'center_x': .5, 'y': .6}
+    BubbleButton:
+        text: 'Cut'
+    BubbleButton:
+        text: 'Copy'
+    BubbleButton:
+        text: 'Paste'
 ''')
 
 
-class SelectableRecycleBoxLayout(FocusBehavior, LayoutSelectionBehavior,
-                                 RecycleBoxLayout):
-    ''' Adds selection and focus behaviour to the view. '''
+class cut_copy_paste(Bubble):
+    pass
 
 
-class SelectableLabel(RecycleDataViewBehavior, Label):
-    ''' Add selection support to the Label '''
-    index = None
-    selected = BooleanProperty(False)
-    selectable = BooleanProperty(True)
+class BubbleShowcase(FloatLayout):
 
-    def refresh_view_attrs(self, rv, index, data):
-        ''' Catch and handle the view changes '''
-        self.index = index
-        return super(SelectableLabel, self).refresh_view_attrs(
-            rv, index, data)
-
-    def on_touch_down(self, touch):
-        ''' Add selection on touch down '''
-        if super(SelectableLabel, self).on_touch_down(touch):
-            return True
-        if self.collide_point(*touch.pos) and self.selectable:
-            return self.parent.select_with_touch(self.index, touch)
-
-    def apply_selection(self, rv, index, is_selected):
-        ''' Respond to the selection of items in the view. '''
-        self.selected = is_selected
-        if is_selected:
-            print("selection changed to {0}".format(rv.data[index]))
-        else:
-            print("selection removed for {0}".format(rv.data[index]))
-
-
-class RV(RecycleView):
     def __init__(self, **kwargs):
-        super(RV, self).__init__(**kwargs)
-        self.data = [{'text': str(x)} for x in range(100)]
+        super(BubbleShowcase, self).__init__(**kwargs)
+        self.but_bubble = Button(text='Press to show bubble')
+        self.but_bubble.bind(on_release=self.show_bubble)
+        self.add_widget(self.but_bubble)
+
+    def show_bubble(self, *l):
+        if not hasattr(self, 'bubb'):
+            self.bubb = bubb = cut_copy_paste()
+            self.add_widget(bubb)
+        else:
+            values = ('left_top', 'left_mid', 'left_bottom', 'top_left',
+                'top_mid', 'top_right', 'right_top', 'right_mid',
+                'right_bottom', 'bottom_left', 'bottom_mid', 'bottom_right')
+            index = values.index(self.bubb.arrow_pos)
+            self.bubb.arrow_pos = values[(index + 1) % len(values)]
 
 
-class TestApp(App):
+class TestBubbleApp(App):
+
     def build(self):
-        return RV()
+        return BubbleShowcase()
+
 
 if __name__ == '__main__':
-    TestApp().run()
+    TestBubbleApp().run()

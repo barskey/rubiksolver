@@ -59,14 +59,6 @@
 
 	FloatLayout:
 		id: scan_float
-		
-		Label:
-			text: 'Colors:'
-			font_size: 18
-			color: (0, 1, 0, 1)
-			size_hint: None, None
-			pos: 0, 240
-			bold: True
 
 		RelativeLayout:
 			id: scan_rel
@@ -84,7 +76,7 @@
 			font_size: 16
 			color: (0, 1, 0, 1)
 			size_hint: None, None
-			pos: root.width / 2 - self.width / 2, root.height - self.height / 2 - 20
+			pos: root.width / 2 - self.width / 2, root.height - self.height / 2 - 30
 			
 		Button:
 			id: btn_next
@@ -96,8 +88,21 @@
 			pos: root.width - self.width - 10, 10
 			on_release: root.scan_cube()
 
+<SolveLabel>:
+	font_size: 16
+	bold: True
+	size_hint: None, None
+	size: 120, 20
+	color: (1, 0.5, 0, 1)
+
 <Solve>:
 	name: 'solve'
+	canvas:
+		Color:
+			rgba: 0, 0, 0, 0.5
+		Rectangle:
+			pos: 40, 80
+			size: 400, 200
 
 	FloatLayout:
 		id: solve_float
@@ -129,24 +134,20 @@
 			size_hint: None, None
 			size: 140, 140
 			pos: root.width/2 - self.width/2 - 80, root.height/2 - self.height/2 + 20
-		Label:
+		SolveLabel:
+			text: 'Solve to:'
+			pos: 290, 210
+		SolveLabel:
 			id: solve_to
-			text: 'Solve to: Solid Cube'
-			font_size: 16
-			bold: True
-			color: (0, 1, 0, 1)
-			size_hint: None, None
-			size: 120, 20
-			pos: 260, 190
-		Label:
+			text: 'Solid Cube'
+			pos: 290, 190
+		SolveLabel:
+			text: 'Moves required:'
+			pos: 290, 160
+		SolveLabel:
 			id: moves_req
-			text: 'Moves required: '
-			font_size: 16
-			bold: True
-			color: (0, 1, 0, 1)
-			size_hint: None, None
-			size: solve_to.size
-			pos: solve_to.x, solve_to.y - 30
+			text: ''
+			pos: 290, 140
 		Button:
 			id: btn_solve
 			text: 'Solve'

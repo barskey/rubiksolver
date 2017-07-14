@@ -12,6 +12,7 @@ from kivy.uix.dropdown import DropDown
 from kivy.uix.image import Image as KvImage
 from kivy.uix.behaviors import DragBehavior
 from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition, NoTransition
+from kivy.uix.bubble import Bubble, BubbleButton
 
 from colormath.color_objects import sRGBColor, LabColor
 from colormath.color_conversions import convert_color
@@ -122,29 +123,31 @@ class Settings(Screen):
 class ColorBox(Label):
 	def on_touch_down(self, touch):
 		if self.collide_point(*touch.pos):
-			if self.id in COLORS:
-				App.get_running_app().sm.get_screen('scan').color_touched(self)
-			else:
-				App.get_running_app().sm.get_screen('scan').site_touched(self)
+			App.get_running_app().sm.get_screen('scan').site_touched(self, self.pos)
 			return True
 
 class SelectDropdown(DropDown):
 	def on_select(self, data):
-		scr =  App.get_running_app().sm.get_screen('solve')
+		app = App.get_running_app()
+		scr = app.sm.get_screen('solve')
 		btn = scr.ids.btn_select
 		img = scr.ids.img_solve
 		
 		btn.text = data
-		scr.ids.solve_to.text = 'Solve to: %s' % data
-		if App.get_running_app().mycube.set_solve_string() >= 0:
-			moves = len(App.get_running_app().mycube.get_solve_string().split(' '))
-			scr.ids.moves_req.text = 'Moves required: %i' % moves
+		scr.ids.solve_to.text = data
+		if app.mycube.set_solve_string() >= 0: # TODO verify what the solve method actually returns
+			moves = str(len(app.mycube.get_solve_string().split(' ')))
+			scr.ids.moves_req.text = moves # TODO add case for non int moves
+			
 		
-		newsrc = None
-		for newdata in rscube.PATTERNS:
-			if newdata[0] == data:
-				newsrc = 'data/' + newdata[1]
+		newsrc = None # TODO set to question mark img in case can't find solve to img
+		for pattern in rscube.PATTERNS:
+			if data == pattern[0]:
+				newsrc = 'data/' + pattern[1]
 		img.source = newsrc
+
+class SolveLabel(Label):
+	pass
 	
 class Solve(Screen):
 	def on_pre_enter(self):
@@ -158,27 +161,48 @@ class Solve(Screen):
 			self._dropdown.add_widget(btn)
 		
 		cube = App.get_running_app().mycube
-		self.ids.solve_to.text = 'Solve to: Solid Cube'
-		moves = len(cube.get_solve_string().split(' '))
-		self.ids.moves_req.text = 'Moves required: %i' % moves
+		self.ids.solve_to.text = 'Solid Cube'
+		moves = str(len(cube.get_solve_string().split(' ')))
+		self.ids.moves_req.text = moves
+
+class ColorBubble(Bubble):
+	pass
+
+class CBButton(BubbleButton):
+	def on_release(self):
+		app = App.get_running_app()
+		scr = app.sm.get_screen('scan')
+		site = scr._site_touched
+		fix_color = COLORS[self.id]
+		# update the site box with new color
+		with site.canvas:
+			Color(0, 0, 0)
+			Rectangle(size=site.size, pos=site.pos)
+			r, g, b = fix_color
+			Color(r, g, b)
+			Rectangle(size=(site.size[0] - 4, site.size[1] - 4), pos=(site.pos[0] + 2, site.pos[1] + 2))
+
+		# remove the Bubble widget
+		bubble = scr._bubble
+		scr.remove_widget(bubble)
+		scr._bubble = None
+
+		cube = app.mycube
+		sitenum = site.id[-1] # site number of corrected site
+
+		raw_color = app.colors[self.id] # get raw color corresponding to new color
+		cube.set_up_raw_color(sitenum, raw_color) # set raw_color for this site on cube object
+		cube.set_up_match_color(int(sitenum), self.id) # set match_color for this site on cube object
+		print 'Set site %s match_color to %s.' % (sitenum, self.id)
 		
+		# enable the button if all the sites on this face have been matched
+		if cube.check_face_matched(cube.get_up_face()[0]):
+			scr.ids.btn_next.disabled = False
+	
 class Scan(Screen):
 	_sites = {}
-	_fix_color = None
-
-	def on_pre_enter(self):
-		x = 30
-		y = 235
-		for name, color in COLORS.items():
-			label = ColorBox(id=name)
-			self.ids.scan_float.add_widget(label)
-			label.size = (34, 34)
-			with label.canvas:
-				r, g, b = color
-				Color(r, g, b)
-				Rectangle(size=(30, 30), pos=(x + 2, y + 2))
-			label.pos = (x, y)
-			y -= 40
+	_bubble = None
+	_site_touched = None
 
 	def on_enter(self):
 		# close grippers
@@ -188,48 +212,28 @@ class Scan(Screen):
 		self._index = 0 # for SCANCUBE list
 		self.scan_cube() # begin scanning cube
 
-	def site_touched(self, site):
-		if self._fix_color is not None:
-			fix_color = COLORS[self._fix_color.id]
-			# update the site box with new color
-			with site.canvas:
-				Color(0, 0, 0)
-				Rectangle(size=site.size, pos=site.pos)
-				r, g, b = fix_color
-				Color(r, g, b)
-				Rectangle(size=(site.size[0] - 4, site.size[1] - 4), pos=(site.pos[0] + 2, site.pos[1] + 2))
+	def site_touched(self, site, pos):
+		if self._bubble is not None: # check if widget has been already added
+			self.remove_widget(self._bubble)
+			self._bubble = None
+			self._site_touched = None
+		else:
+			self._bubble = bubble = ColorBubble()
+			bubble.size_hint = (None, None)
+			bubble.size = (240, 45)
+			for color, val in COLORS.items():
+				cb = CBButton()
+				cb.id = color
+				rgb = [a for a in val]
+				rgb.append(1)
+				cb.background_color = rgb
+				cb.background_normal = ''
+				bubble.add_widget(cb)
 
-			app = App.get_running_app()
-			cube = app.mycube
-			sitenum = site.id[-1] # site number of corrected site
-
-			raw_color = app.colors[self._fix_color.id] # get raw color corresponding to new color
-			cube.set_up_raw_color(sitenum, raw_color) # set raw_color for this site on cube object
-			cube.set_up_match_color(int(sitenum), self._fix_color.id) # set match_color for this site on cube object
-			print 'Set site %s match_color to %s.' % (sitenum, self._fix_color.id)
-			
-			# enable the button if all the sites on this face have been matched
-			if cube.check_face_matched(cube.get_up_face()[0]):
-				self.ids.btn_next.disabled = False
-
-	def color_touched(self, color):
-		if self._fix_color is not None:
-			prev_fix = self._fix_color
-			prev_color = COLORS[self._fix_color.id]
-			with prev_fix.canvas:
-				Color(0, 0, 0)
-				Rectangle(size=prev_fix.size, pos=(prev_fix.pos))
-				r, g, b = prev_color
-				Color(r, g, b)
-				Rectangle(size=(30, 30), pos=(prev_fix.pos[0] + 2, prev_fix.pos[1] + 2))
-		self._fix_color = color
-		fix_color = COLORS[color.id]
-		with color.canvas:
-			Color(0, 1, 0)
-			Rectangle(size=color.size, pos=(color.pos))
-			r, g, b = fix_color
-			Color(r, g, b)
-			Rectangle(size=(30, 30), pos=(color.pos[0] + 2, color.pos[1] + 2))
+			bubble.arrow_pos = 'top_mid'
+			bubble.pos = (pos[0] + 45, pos[1] + 20)
+			self.add_widget(bubble)
+			self._site_touched = site
 
 	def scan_cube(self):
 		"""
@@ -247,7 +251,7 @@ class Scan(Screen):
 				self._index = self._index + 1
 				self.scan_cube()
 			else:
-				self.ids.scan_status.text = 'Use the colors on the left to\nfix the boxes shown in pink.'
+				self.ids.scan_status.text = 'Touch the boxes shown in pink\nto fix the colors.'
 				self.ids.scan_status.color = (1, 0, 0, 1)
 				self.ids.btn_next.disabled = True
 				# increment the index for the next face when button is enabled

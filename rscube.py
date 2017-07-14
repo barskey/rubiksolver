@@ -386,9 +386,12 @@ class MyCube(object):
 		"""
 		cubedef = self.get_cube_def()
 		print cubedef # debug
-		#self._solve_string = solve(cube_def) # TODO allow solve to pattern also
+#		if self.solve_to() is None:
+#			self._solve_string = solve(cube_def)
+#		else
+#			self._solve_string = solve(cube_def, self.solve_to)
 		self._solve_string = "R' D2 R' U2 R F2 D B2 U' R F' U R2 D L2 D' B2 R2 B2 U' B2" # debug
-		return 0
+		return self._solve_string
 		
 	def set_cube_colors(self):
 		"""
