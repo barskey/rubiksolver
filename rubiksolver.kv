@@ -25,7 +25,7 @@
 
 		Button:
 			text: 'Settings'
-			font_size: 20
+			font_size: 16
 			background_color: (0.5, 0.5, 0.5, 1)
 			size_hint: None, None
 			width: 100
@@ -117,9 +117,9 @@
 			pos: root.width/2 - self.width/2, root.height - self.height/2 - 20
 		Label:
 			text: 'Solve to:'
+			color: (1, 0.5, 0, 1)
 			bold: True
 			font_size: 16
-			color: (1, 1, 1, 1)
 			size_hint: None, None
 			pos: img_solve.x + 25, img_solve.y - 65
 		Button:
@@ -140,13 +140,15 @@
 		SolveLabel:
 			id: solve_to
 			text: 'Solid Cube'
+			color: (1, 1, 1, 1)
 			pos: 290, 190
 		SolveLabel:
-			text: 'Moves required:'
+			text: 'Moves to solve:'
 			pos: 290, 160
 		SolveLabel:
 			id: moves_req
 			text: ''
+			color: (1, 1, 1, 1)
 			pos: 290, 140
 		Button:
 			id: btn_solve
@@ -156,7 +158,7 @@
 			background_color: [0, 1, 0, 1]
 			size: 100, 40
 			pos: root.width - self.width - 10, 10
-			on_release: print 'Solve!'
+			on_release: root.run_solve()
 			
 <DragBox>:
 	canvas:

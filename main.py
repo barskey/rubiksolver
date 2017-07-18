@@ -135,15 +135,13 @@ class SelectDropdown(DropDown):
 		
 		btn.text = data
 		scr.ids.solve_to.text = data
+		app.mycube.solve_to = data
 		if app.mycube.set_solve_string() >= 0: # TODO verify what the solve method actually returns
 			moves = str(len(app.mycube.get_solve_string().split(' ')))
 			scr.ids.moves_req.text = moves # TODO add case for non int moves
 			
-		
-		newsrc = None # TODO set to question mark img in case can't find solve to img
-		for pattern in rscube.PATTERNS:
-			if data == pattern[0]:
-				newsrc = 'data/' + pattern[1]
+		newsrc = None # TODO set image to question mark img in case can't find solve to img
+		newsrc = 'data/' + rscube.PATTERNS[data][0]
 		img.source = newsrc
 
 class SolveLabel(Label):
@@ -155,15 +153,56 @@ class Solve(Screen):
 		img.source = 'data/_solid.jpg'
 	
 		self._dropdown = SelectDropdown()
+		# add each solve to pattern to dropdown
 		for solution in rscube.PATTERNS:
-			btn = Button(text=solution[0], size_hint_y=None, height=40)
+			btn = Button(text=solution, size_hint_y=None, height=40)
 			btn.bind(on_release=lambda btn: self._dropdown.select(btn.text))
 			self._dropdown.add_widget(btn)
 		
 		cube = App.get_running_app().mycube
 		self.ids.solve_to.text = 'Solid Cube'
-		moves = str(len(cube.get_solve_string().split(' ')))
-		self.ids.moves_req.text = moves
+		self.ids.moves_req.text = str(len(cube.get_solve_string().split(' ')))
+	
+	def run_solve(self):
+		app = App.get_running_app()
+		cube  = app.mycube
+		solve_string = cube.get_solve_string()
+		if solve_string:
+			print 'Solving...'
+			self.ids.btn_solve.text = 'Solving...'
+			self.ids.btn_solve.disabled = True
+			self.ids.btn_select.disabled = True
+			count = len(solve_string.split(' '))
+			for move in solve_string.split(' '):
+				print 'move', move
+				face = move[0] # first char is which face to move
+				dir = move[1] if len(move) > 1 else '+' # second char will be either ` or 2. 
+				gripper = cube.move_face_for_twist(face) # returns gripper to which face was moved
+				if dir == "'":
+					cube.twist(gripper, '-')
+				elif dir == '2':
+					cube.twist(gripper, '+')
+					cube.twist(gripper, '+')
+				else:
+					cube.twist(gripper, dir)
+				count = count - 1
+				self.ids.moves_req.text = str(count)
+			print '-------------'
+			print 'Done Solving!'
+			# set all the cube sites based on the solve to string
+			counter = 0
+			st = cube.solve_to
+			for f in range(6):
+				for s in range(9):
+					mc = cube._face_colors[rscube.FACES[st[counter]]]
+					cube._match_colors[f][s] = mc
+					cube._raw_colors[f][s] = app.colors[mc]
+					counter = counter + 1
+			cube.set_face_colors()
+			cube.set_cube_colors()
+			self.ids.btn_solve.text = 'Solve'
+			self.ids.btn_solve.disabled = False
+			self.ids.btn_select.disabled = False
 
 class ColorBubble(Bubble):
 	pass
@@ -214,14 +253,14 @@ class Scan(Screen):
 
 	def site_touched(self, site, pos):
 		if self._bubble is not None: # check if widget has been already added
-			self.remove_widget(self._bubble)
-			self._bubble = None
-			self._site_touched = None
+			self.remove_widget(self._bubble) # remove existing bubble
+			self._bubble = None # set 'pointers' to none
+			self._site_touched = None # set 'pointers' to none
 		else:
-			self._bubble = bubble = ColorBubble()
+			self._bubble = bubble = ColorBubble() # create a new bubble object
 			bubble.size_hint = (None, None)
 			bubble.size = (240, 45)
-			for color, val in COLORS.items():
+			for color, val in COLORS.items(): # set the colors of the buttons
 				cb = CBButton()
 				cb.id = color
 				rgb = [a for a in val]
@@ -231,9 +270,9 @@ class Scan(Screen):
 				bubble.add_widget(cb)
 
 			bubble.arrow_pos = 'top_mid'
-			bubble.pos = (pos[0] + 45, pos[1] + 20)
-			self.add_widget(bubble)
-			self._site_touched = site
+			bubble.pos = (pos[0] + 45, pos[1] + 20) # position figured out by trial and error
+			self.add_widget(bubble) # add bubble widget to screen widget (scan)
+			self._site_touched = site # set 'pointer' for site touched
 
 	def scan_cube(self):
 		"""
@@ -390,9 +429,10 @@ class Scan(Screen):
 			print '** Unsure site(s) when scanning face %s (index %i)' % (up_face, index)
 			return False
 		else: # face has been scanned and there are no unsure sites
+			print '--------------------------------'
 			print 'Finished scanning %i. GOOD SCAN.' % index
 			return True
-			
+	
 class RubikSolverApp(App):
 
 	mycube = None

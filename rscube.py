@@ -186,30 +186,30 @@ testimages = [
 	'testimg/bface.jpg'
 ]
 
-PATTERNS = [
-	['Solid Cube',           '_solid.jpg',                   None],
-	['Checkerboard',         'checkerboard.jpg',             'UFUFUFUFURURURURURFRFRFRFRFDBDBDBDBDLDLDLDLDLBLBLBLBLB'],
-	['Easy Checkerboard',    'easy-checkerboard.jpg',        'UDUDUDUDURLRLRLRLRFBFBFBFBFDUDUDUDUDLRLRLRLRLBFBFBFBFB'],
-	['Wire',                 'wire.jpg',                     'UUUUUUUUURLLRRRLLRBBFFFFFBBDDDDDDDDDLRRLLLRRLFFBBBBBFF'],
-	['Tablecloth',           'tablecloth.jpg',               'BFBRURBFBRURURURURURUBFBURUFBFLDLFBFLDLDLDLDLDLDFBFDLD'],
-	['Spiral',               'spiral.jpg',                   'FFFFUFFUURRUURUUUURRFRFFRRRBBBBDBDDBDDDDLDLLDLLLLBBLLB'],
-	['Vertical Stripes',     'vertical-stripes.jpg',         'UUUUUUUUUBRFBRFBRFLFRLFRLFRDDDDDDDDDFLBFLBFLBRBLRBLRBL'],
-	['Opposite Corners',     'opposite-corners.jpg',         'DDDDUDDDDLRRRRRRRLBFFFFFFFBUUUUDUUUURLLLLLLLRFBBBBBBBF'],
-	['Cross',                'cross.jpg',                    'DUDUUUDUDFRFRRRFRFRFRFFFRFRUDUDDDUDUBLBLLLBLBLBLBBBLBL'],
-	['Cross 2',              'cross2.jpg',                   'RURUUURURFRFRRRFRFUFUFFFUFULDLDDDLDLBLBLLLBLBDBDBBBDBD'],
-	['Cube in cube',         'cube-in-cube.jpg',             'FFFFUUFUURRURRUUUURFFRFFRRRBBBDDBDDBDDDLLDLLDLLLLBBLBB'],
-	['Cube in cube in cube', 'cube-in-a-cube-in-a-cube.jpg', 'RRRRUURUFURFRRFFFFUFRUFFUUULLLDDLBDLBBBLLBDLBDDDDBBDBL'],
-	['Anaconda',             'anaconda.jpg',                 'FUFUUFFFFUUUURRURURRRFFRRFRBDBBDDBBBDLDDLLDDDLBLBBLLLL'],
-	['Python',               'python.jpg',                   'DUDDUDDUDFFFFRRFRFRFRFFRRRRUUUDDDUUUBBBBLLBLBLBLBBLLLL'],
-	['Black Mamba',          'black-mamba.jpg',              'RURUURRRRBBBRRRBBBDDDFFFDDDLLLDDLLDLFLFFLLFFFUBUUBUUBU'],
-	['Green Mamba',          'green-mamba.jpg',              'RRRUUURRRBBBRRRBBBDDDFFFDDDLLLDDLLDLFLFFLLFFFUUUBBUUBU'],
-	['Four Spots',           'four-spots.jpg',               'UUUUUUUUULLLLRLLLLBBBBFBBBBDDDDDDDDDRRRRLRRRRFFFFBFFFF'],
-	['Six Spots',            'six-spots.jpg',                'FFFFUFFFFUUUURUUUURRRRFRRRRBBBBDBBBBDDDDLDDDDLLLLBLLLL'],
-	['Twister',              'twister.jpg',                  'RURRUURUURRFRRFFRFUFFFFFUUULLLDDDDDLBBBLLLLLBDBDDBBDBB'],
-	['Center Edge Corner',   'center-edge-corner.jpg',       'RFRFUFRFRFUFURUFUFURURFRURULBLBDBLBLBDBDLDBDBDLDLBLDLD'],
-	['Tetris',               'tetris.jpg',                   'FFBFUBFBBUDDURDUUDRLLRFLRRLBBFBDFBFFUDDULDUUDLRRLBRLLR'],
-	['Facing Checkerboards', 'facing-checkerboards.jpg',     'UUUUUUUUURLRLRLRLRFFFFFFFFFDDDDDDDDDLRLRLRLRLBBBBBBBBB']
-]
+PATTERNS = {
+	'Solid Cube':           ['_solid.jpg',                   'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB'],
+	'Checkerboard':         ['checkerboard.jpg',             'UFUFUFUFURURURURURFRFRFRFRFDBDBDBDBDLDLDLDLDLBLBLBLBLB'],
+	'Easy Checkerboard':    ['easy-checkerboard.jpg',        'UDUDUDUDURLRLRLRLRFBFBFBFBFDUDUDUDUDLRLRLRLRLBFBFBFBFB'],
+	'Wire':                 ['wire.jpg',                     'UUUUUUUUURLLRRRLLRBBFFFFFBBDDDDDDDDDLRRLLLRRLFFBBBBBFF'],
+	'Tablecloth':           ['tablecloth.jpg',               'BFBRURBFBRURURURURURUBFBURUFBFLDLFBFLDLDLDLDLDLDFBFDLD'],
+	'Spiral':               ['spiral.jpg',                   'FFFFUFFUURRUURUUUURRFRFFRRRBBBBDBDDBDDDDLDLLDLLLLBBLLB'],
+	'Vertical Stripes':     ['vertical-stripes.jpg',         'UUUUUUUUUBRFBRFBRFLFRLFRLFRDDDDDDDDDFLBFLBFLBRBLRBLRBL'],
+	'Opposite Corners':     ['opposite-corners.jpg',         'DDDDUDDDDLRRRRRRRLBFFFFFFFBUUUUDUUUURLLLLLLLRFBBBBBBBF'],
+	'Cross':                ['cross.jpg',                    'DUDUUUDUDFRFRRRFRFRFRFFFRFRUDUDDDUDUBLBLLLBLBLBLBBBLBL'],
+	'Cross 2':              ['cross2.jpg',                   'RURUUURURFRFRRRFRFUFUFFFUFULDLDDDLDLBLBLLLBLBDBDBBBDBD'],
+	'Cube in cube':         ['cube-in-cube.jpg',             'FFFFUUFUURRURRUUUURFFRFFRRRBBBDDBDDBDDDLLDLLDLLLLBBLBB'],
+	'Cube in cube in cube': ['cube-in-a-cube-in-a-cube.jpg', 'RRRRUURUFURFRRFFFFUFRUFFUUULLLDDLBDLBBBLLBDLBDDDDBBDBL'],
+	'Anaconda':             ['anaconda.jpg',                 'FUFUUFFFFUUUURRURURRRFFRRFRBDBBDDBBBDLDDLLDDDLBLBBLLLL'],
+	'Python':               ['python.jpg',                   'DUDDUDDUDFFFFRRFRFRFRFFRRRRUUUDDDUUUBBBBLLBLBLBLBBLLLL'],
+	'Black Mamba':          ['black-mamba.jpg',              'RURUURRRRBBBRRRBBBDDDFFFDDDLLLDDLLDLFLFFLLFFFUBUUBUUBU'],
+	'Green Mamba':          ['green-mamba.jpg',              'RRRUUURRRBBBRRRBBBDDDFFFDDDLLLDDLLDLFLFFLLFFFUUUBBUUBU'],
+	'Four Spots':           ['four-spots.jpg',               'UUUUUUUUULLLLRLLLLBBBBFBBBBDDDDDDDDDRRRRLRRRRFFFFBFFFF'],
+	'Six Spots':            ['six-spots.jpg',                'FFFFUFFFFUUUURUUUURRRRFRRRRBBBBDBBBBDDDDLDDDDLLLLBLLLL'],
+	'Twister':              ['twister.jpg',                  'RURRUURUURRFRRFFRFUFFFFFUUULLLDDDDDLBBBLLLLLBDBDDBBDBB'],
+	'Center Edge Corner':   ['center-edge-corner.jpg',       'RFRFUFRFRFUFURUFUFURURFRURULBLBDBLBLBDBDLDBDBDLDLBLDLD'],
+	'Tetris':               ['tetris.jpg',                   'FFBFUBFBBUDDURDUUDRLLRFLRRLBBFBDFBFFUDDULDUUDLRRLBRLLR'],
+	'Facing Checkerboards': ['facing-checkerboards.jpg',     'UUUUUUUUURLRLRLRLRFFFFFFFFFDDDDDDDDDLRLRLRLRLBBBBBBBBB']
+}
 
 class MyCube(object):
 
@@ -218,7 +218,7 @@ class MyCube(object):
 		self._face_colors = [None for i in range(6)] # matched color of the center site on each face e.g. red, blue, etc.
 		self._match_colors = [[None for i in range(9)] for j in self._face_colors] # matched color for each site e.g. red, blue, etc.
 		self._cube_colors = [[None for i in range(9)] for j in self._face_colors] # letter for corresponding face_color for each site on cube
-		self.solve_to = None # string representing cube solve pattern, None to solve to standard
+		self.solve_to = 'Solid Cube' # string representing cube solve to pattern
 		self._solve_string = None # instructions to solve cube
 
 		self._grip_state = {'A': None, 'B': None}
@@ -282,7 +282,7 @@ class MyCube(object):
 
 	@solve_to.setter
 	def solve_to(self, pattern):
-		self._solve_to = pattern
+		self._solve_to = PATTERNS[pattern][1]
 
 	def scan_face(self):
 		"""
@@ -328,7 +328,7 @@ class MyCube(object):
 		"""
 		for face, colors in enumerate(self._match_colors):
 			self._face_colors[face] = colors[4]
-		print self._face_colors # debug
+		#print self._face_colors # debug
 	
 	def check_face_colors(self):
 		"""
@@ -385,14 +385,11 @@ class MyCube(object):
 		Sets the solve string from kociemba
 		"""
 		cubedef = self.get_cube_def()
-		print cubedef # debug
-#		if self.solve_to() is None:
-#			self._solve_string = solve(cube_def)
-#		else
-#			self._solve_string = solve(cube_def, self.solve_to)
+		#print cubedef # debug
+#		self._solve_string = solve(cube_def, self.solve_to)
 		self._solve_string = "R' D2 R' U2 R F2 D B2 U' R F' U R2 D L2 D' B2 R2 B2 U' B2" # debug
 		return self._solve_string
-		
+	
 	def set_cube_colors(self):
 		"""
 		Sets each site to letter representing face color
@@ -400,7 +397,7 @@ class MyCube(object):
 		for f in range(6):
 			for s in range(9):
 				self._cube_colors[f][s] = FACES_STR[self._face_colors.index(self._match_colors[f][s])]
-		print self._cube_colors # debug
+		#print self._cube_colors # debug
 	
 	def get_cube_def(self):
 		"""
@@ -489,7 +486,12 @@ class MyCube(object):
 			return
 		if self._grip_state[other_gripper] == 'Open': # other gripper is open, so this twist moves cube and changes orientation
 			self._orientation = NEW_ORIENTATION_TWISTA[o][dir] if gripper == 'A' else NEW_ORIENTATION_TWISTB[o][dir]
-		print 'Twist gripper %s %s New orientation: %s' % (gripper, dir, self._orientation)
+			print 'Twist gripper %s %s New orientation: %s' % (gripper, dir, self._orientation)
+		else:
+			print 'Twist gripper %s %s' % (gripper, dir)
+		#	self.grip(gripper, 'o')
+		#	print 'Twist gripper %s %s' % (gripper, dir)
+		#	self.grip(gripper, 'c')
 
 	def move_face_for_twist(self, face_to_move, to_gripper = None):
 		"""
