@@ -468,6 +468,7 @@ class MyCube(object):
 
 		self._grip_state[gripper] = temp
 		print '%s gripper %s' % (temp, gripper)
+		time.sleep(1)
 
 	def twist(self, gripper, dir):
 		"""
@@ -487,11 +488,10 @@ class MyCube(object):
 		if self._grip_state[other_gripper] == 'Open': # other gripper is open, so this twist moves cube and changes orientation
 			self._orientation = NEW_ORIENTATION_TWISTA[o][dir] if gripper == 'A' else NEW_ORIENTATION_TWISTB[o][dir]
 			print 'Twist gripper %s %s New orientation: %s' % (gripper, dir, self._orientation)
+			time.sleep(1)
 		else:
 			print 'Twist gripper %s %s' % (gripper, dir)
-		#	self.grip(gripper, 'o')
-		#	print 'Twist gripper %s %s' % (gripper, dir)
-		#	self.grip(gripper, 'c')
+			time.sleep(1)
 
 	def move_face_for_twist(self, face_to_move, to_gripper = None):
 		"""

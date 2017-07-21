@@ -74,8 +74,22 @@ class SiteBox(DragBehavior, Label):
 		app.update_config('Sites', self.id + '_x', center[0])
 		app.update_config('Sites', self.id + '_y', center[1])
 
+	def on_touch_down(self, touch):
+		if self.collide_point(*touch.pos):
+			App.get_running_app().sm.get_screen('settings').get_site_color(self)
+			return True
+
+
+class LabelBox(Label):
+	def on_touch_down(self, touch):
+		if self.collide_point(*touch.pos):
+			App.get_running_app().sm.get_screen('settings').set_selected_color(self)
+			return True
+
 class Settings(Screen):
-	_sites = {}
+	_sites_boxes = {}
+	_colors_boxes = {}
+	_selected_color = None
 
 	def add_crop_img(self):
 
@@ -83,7 +97,7 @@ class Settings(Screen):
 		img = self.ids.crop_img
 		img.source = 'testimg/uface.jpg'
 
-	def add_sites_img(self):
+	def add_img(self, img):
 
 		app = App.get_running_app()
 		center = (app.crop_center[0], app.crop_center[1])
@@ -94,14 +108,11 @@ class Settings(Screen):
 		cimg = crop_pil_img(pimg, center, app.crop_size)
 		cimg.save('tmp.jpg')
 
-		img = self.ids.sites_img
 		img.source = 'tmp.jpg'
 		img.size = (app.crop_size, app.crop_size)
 		img.reload()
 
-		self.add_sites_boxes()
-
-	def add_sites_boxes(self):
+	def add_boxes(self, rl, boxes):
 
 		app = App.get_running_app()
 
@@ -109,16 +120,47 @@ class Settings(Screen):
 			site_name = 'center' + str(i)
 
 			box = None
-			if site_name in self._sites:
-				box = self._sites[site_name]
+			if site_name in boxes:
+				box = boxes[site_name]
 			else:
 				box = SiteBox(id=site_name)
-				self._sites[site_name] = box
-				self.ids.sites_rel.add_widget(box)
+				boxes[site_name] = box
+				rl.add_widget(box)
 
 			pos = app.center_to_ll((app.site_center_x[i-1], app.site_center_y[i-1]), (app.crop_size, app.crop_size), app.site_size, True)
 			box.size = (app.site_size, app.site_size)
 			box.pos = pos
+	
+	def add_colors(self, rl):
+		x = -120
+		y = 170
+		for color, rgb in COLORS.items():
+			label = LabelBox(id=color)
+			rl.add_widget(label)
+			raw_rgb = App.get_running_app().colors[color]
+			with label.canvas:
+				r, g, b = rgb
+				Color(r, g, b)
+				Rectangle(size=(30, 30), pos=(x + 2, y + 2))
+				r2, g2, b2 = raw_rgb
+				Color(r2/255, g2/255, b2/255)
+				Rectangle(size=(30, 30), pos=(x + 32, y + 2))
+			label.pos = (x, y)
+			y -= 40
+			
+	def set_selected_color(self, site):
+		if self._selected_color is not None:
+			col = ','.join(format(x, '1.0f') for x in self._selected_color)
+			App.get_running_app().update_config('Colors', site.id, col)
+			with site.canvas:
+				r, g, b = self._selected_color
+				Color(r/255, g/255, b/255)
+				Rectangle(size=(30, 30), pos=(site.x + 32, site.y + 2))
+
+	def get_site_color(self, site):
+		face_colors = App.get_running_app().mycube.scan_face()
+		sitenum = int(site.id[-1]) - 1
+		self._selected_color = face_colors[sitenum]
 
 class ColorBox(Label):
 	def on_touch_down(self, touch):
@@ -178,13 +220,19 @@ class Solve(Screen):
 				face = move[0] # first char is which face to move
 				dir = move[1] if len(move) > 1 else '+' # second char will be either ` or 2. 
 				gripper = cube.move_face_for_twist(face) # returns gripper to which face was moved
-				if dir == "'":
-					cube.twist(gripper, '-')
-				elif dir == '2':
+				if dir == "'": # CCW
+					cube.twist(gripper, '-') # twist CCW
+					cube.grip(gripper, 'o') # open gripper
+					cube.twist(gripper, '+') # twist back to start
+					cube.grip(gripper, 'c') # close gripper
+				elif dir == '2': # twist twice
 					cube.twist(gripper, '+')
 					cube.twist(gripper, '+')
-				else:
-					cube.twist(gripper, dir)
+				else: # CW
+					cube.twist(gripper, dir) # twist CW
+					cube.grip(gripper, 'o') # open gripper
+					cube.twist(gripper, '-') # twist back to start
+					cube.grip(gripper, 'c') # close gripper
 				count = count - 1
 				self.ids.moves_req.text = str(count)
 			print '-------------'
@@ -293,8 +341,7 @@ class Scan(Screen):
 				self.ids.scan_status.text = 'Touch the boxes shown in pink\nto fix the colors.'
 				self.ids.scan_status.color = (1, 0, 0, 1)
 				self.ids.btn_next.disabled = True
-				# increment the index for the next face when button is enabled
-				self._index = self._index + 1
+				self._index = self._index + 1 # increment the index for the next face when button is enabled
 		else:
 			# move U back to top
 			print 'Move face U back to top'
@@ -362,11 +409,12 @@ class Scan(Screen):
 
 		# move cube to next face
 		print 'Moving face %s to %s.' % (face, to_gripper)
+		self.ids.scan_status.text = 'Preparing to scan...'
 		cube.move_face_for_twist(face, to_gripper) # move face to prep for scan
 
 		up_face = cube.orientation[0] # get current up face
 		rot = cube.get_up_rot() # get current rotation of up face
-		self.ids.scan_status.text = 'Scanning face ' + up_face
+		self.ids.scan_status.text = 'Scanning face %s...' % up_face
 
 		# get and update image
 		pimg = PILImage.open(rscube.testimages[rscube.FACES[up_face]])
@@ -516,8 +564,12 @@ class RubikSolverApp(App):
 
 	def update_config(self, setting, option, value):
 		# TODO move gripper
-
-		config.set(setting, option, str(int(value)))
+		val = None
+		try:
+			val = int(value)
+		except ValueError:
+			val = value
+		config.set(setting, option, str(val))
 		with open(CONFIGFILE, 'wb') as configfile:
 			config.write(configfile)
 		self.get_config()

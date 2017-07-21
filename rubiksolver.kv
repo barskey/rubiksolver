@@ -54,6 +54,16 @@
 	size_hint: None, None
 	size: app.site_size + 4, app.site_size + 4
 
+<LabelBox>:
+	canvas:
+		Color:
+			rgb: 0, 0, 0
+		Rectangle:
+			pos: self.pos
+			size: app.site_size * 2 + 4, app.site_size + 4
+	size_hint: None, None
+	size: app.site_size * 2 + 4, app.site_size + 4
+
 <Scan>:
 	name: 'scan'
 
@@ -309,7 +319,9 @@
 			id: tab_sites
 			text: 'Sites'
 
-			on_release: root.add_sites_img()
+			on_release:
+				root.add_img(sites_img)
+				root.add_boxes(sites_rel, root._sites_boxes)
 
 			FloatLayout:
 				id: sites_float
@@ -335,6 +347,25 @@
 					pos_hint: {'center_x': 0.5, 'center_y': 0.5}
 					Image:
 						id: sites_img
+
+		TabbedPanelItem:
+			id: tab_colors
+			text: 'Colors'
+
+			on_release:
+				root.add_img(colors_img)
+				root.add_boxes(colors_rel, root._colors_boxes)
+				root.add_colors(colors_rel)
+
+			FloatLayout:
+				id: colors_float
+				RelativeLayout:
+					id: colors_rel
+					size_hint: None, None
+					size: crop_slider.value, crop_slider.value
+					pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+					Image:
+						id: colors_img
 
 		TabbedPanelItem:
 			id: tab_grip
