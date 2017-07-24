@@ -279,7 +279,7 @@
 			id: tab_crop
 			text: 'Crop'
 
-			on_release: root.add_crop_img()
+			on_release: root.add_img(crop_img, False)
 
 			FloatLayout:
 				id: crop_float
@@ -322,6 +322,7 @@
 			on_release:
 				root.add_img(sites_img)
 				root.add_boxes(sites_rel, root._sites_boxes)
+				root.add_colors(sites_rel)
 
 			FloatLayout:
 				id: sites_float
@@ -347,25 +348,6 @@
 					pos_hint: {'center_x': 0.5, 'center_y': 0.5}
 					Image:
 						id: sites_img
-
-		TabbedPanelItem:
-			id: tab_colors
-			text: 'Colors'
-
-			on_release:
-				root.add_img(colors_img)
-				root.add_boxes(colors_rel, root._colors_boxes)
-				root.add_colors(colors_rel)
-
-			FloatLayout:
-				id: colors_float
-				RelativeLayout:
-					id: colors_rel
-					size_hint: None, None
-					size: crop_slider.value, crop_slider.value
-					pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-					Image:
-						id: colors_img
 
 		TabbedPanelItem:
 			id: tab_grip

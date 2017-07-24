@@ -91,26 +91,23 @@ class Settings(Screen):
 	_colors_boxes = {}
 	_selected_color = None
 
-	def add_crop_img(self):
-
-		# TODO change this to get actual image from camera
-		img = self.ids.crop_img
-		img.source = 'testimg/uface.jpg'
-
-	def add_img(self, img):
+	def add_img(self, img, crop=True):
 
 		app = App.get_running_app()
 		center = (app.crop_center[0], app.crop_center[1])
 
 		# TODO change this to get actual image from camera
 		# load/grab image
-		pimg = PILImage.open('testimg/uface.jpg')
-		cimg = crop_pil_img(pimg, center, app.crop_size)
-		cimg.save('tmp.jpg')
+		if crop is True:
+			pimg = PILImage.open('testimg/uface.jpg')
+			cimg = crop_pil_img(pimg, center, app.crop_size)
+			cimg.save('tmp.jpg')
 
-		img.source = 'tmp.jpg'
-		img.size = (app.crop_size, app.crop_size)
-		img.reload()
+			img.source = 'tmp.jpg'
+			img.size = (app.crop_size, app.crop_size)
+			img.reload()
+		else:
+			img.source = 'testimg/uface.jpg'
 
 	def add_boxes(self, rl, boxes):
 
@@ -132,7 +129,7 @@ class Settings(Screen):
 			box.pos = pos
 	
 	def add_colors(self, rl):
-		x = -120
+		x = 240
 		y = 170
 		for color, rgb in COLORS.items():
 			label = LabelBox(id=color)
@@ -141,10 +138,10 @@ class Settings(Screen):
 			with label.canvas:
 				r, g, b = rgb
 				Color(r, g, b)
-				Rectangle(size=(30, 30), pos=(x + 2, y + 2))
+				Rectangle(size=(32, 32), pos=(x + 2, y + 2))
 				r2, g2, b2 = raw_rgb
 				Color(r2/255, g2/255, b2/255)
-				Rectangle(size=(30, 30), pos=(x + 32, y + 2))
+				Rectangle(size=(32, 32), pos=(x + 34, y + 2))
 			label.pos = (x, y)
 			y -= 40
 			
@@ -155,7 +152,8 @@ class Settings(Screen):
 			with site.canvas:
 				r, g, b = self._selected_color
 				Color(r/255, g/255, b/255)
-				Rectangle(size=(30, 30), pos=(site.x + 32, site.y + 2))
+				Rectangle(size=(32, 32), pos=(site.x + 34, site.y + 2))
+			self._selected_color = None
 
 	def get_site_color(self, site):
 		face_colors = App.get_running_app().mycube.scan_face()
