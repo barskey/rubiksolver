@@ -1,28 +1,28 @@
 [Crop]
 center_x = 159
-center_y = 122
-size = 184
+center_y = 123
+size = 186
 
 [Sites]
-size = 32
-center1_x = 34
-center1_y = 30
+size = 34
+center1_x = 35
+center1_y = 29
 center2_x = 92
 center2_y = 31
-center3_x = 150
-center3_y = 32
+center3_x = 154
+center3_y = 33
 center4_x = 33
 center4_y = 87
-center5_x = 92
-center5_y = 88
+center5_x = 93
+center5_y = 89
 center6_x = 150
 center6_y = 89
 center7_x = 29
 center7_y = 149
 center8_x = 90
 center8_y = 149
-center9_x = 150
-center9_y = 150
+center9_x = 151
+center9_y = 149
 
 [GripA]
 open = -4
@@ -31,7 +31,7 @@ load = 19
 
 [GripB]
 open = 17
-closed = 5
+closed = -2
 load = 13
 
 [TwistA]
@@ -48,9 +48,9 @@ pos270 = 60
 
 [Colors]
 red = 114,25,28
-white = 181,190,193
-blue = 8,44,95
-yellow = 175,162,43
+white = 182,190,193
+blue = 2,38,88
+yellow = 174,162,43
 green = 1,71,29
-orange = 114,25,28
+orange = 174,162,43
 

@@ -50,7 +50,7 @@
 			rgb: 0, 0, 0
 		Rectangle:
 			pos: self.pos
-			size: app.site_size + 4, app.site_size + 4
+			size: 36, 36
 	size_hint: None, None
 	size: app.site_size + 4, app.site_size + 4
 
@@ -60,9 +60,11 @@
 			rgb: 0, 0, 0
 		Rectangle:
 			pos: self.pos
-			size: app.site_size * 2 + 4, app.site_size + 4
+#			size: app.site_size * 2 + 4, app.site_size + 4
+			size: 68, 36
 	size_hint: None, None
-	size: app.site_size * 2 + 4, app.site_size + 4
+#	size: app.site_size * 2 + 4, app.site_size + 4
+	size: 68, 36
 
 <Scan>:
 	name: 'scan'
@@ -193,6 +195,7 @@
 	drag_timeout: 10000000
 	drag_distance: 0
 	size_hint: None, None
+	size: app.site_size, app.site_size
 
 <Settings>:
 	name: 'settings'
@@ -321,7 +324,7 @@
 
 			on_release:
 				root.add_img(sites_img)
-				root.add_boxes(sites_rel, root._sites_boxes)
+				root.add_boxes(sites_rel)
 				root.add_colors(sites_rel)
 
 			FloatLayout:

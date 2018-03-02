@@ -67,23 +67,27 @@ class DragBox(DragBehavior, Label):
 	pass
 
 class SiteBox(DragBehavior, Label):
-
 	def on_pos(self, *args):
 		app = App.get_running_app()
+		
 		center = app.ll_to_center((self.x, self.y), (app.crop_size, app.crop_size), app.site_size, True)
 		app.update_config('Sites', self.id + '_x', center[0])
 		app.update_config('Sites', self.id + '_y', center[1])
 
 	def on_touch_down(self, touch):
-		if self.collide_point(*touch.pos):
-			App.get_running_app().sm.get_screen('settings').get_site_color(self)
-			return True
+		app = App.get_running_app()
 
+		if self.collide_point(*touch.pos):
+			app.sm.get_screen('settings').set_touched_color(self)
+
+		return super(SiteBox, self).on_touch_down(touch)
 
 class LabelBox(Label):
 	def on_touch_down(self, touch):
+		app = App.get_running_app()
+		
 		if self.collide_point(*touch.pos):
-			App.get_running_app().sm.get_screen('settings').set_selected_color(self)
+			app.sm.get_screen('settings').set_selected_color(self)
 			return True
 
 class Settings(Screen):
@@ -92,7 +96,6 @@ class Settings(Screen):
 	_selected_color = None
 
 	def add_img(self, img, crop=True):
-
 		app = App.get_running_app()
 		center = (app.crop_center[0], app.crop_center[1])
 
@@ -109,19 +112,18 @@ class Settings(Screen):
 		else:
 			img.source = 'testimg/uface.jpg'
 
-	def add_boxes(self, rl, boxes):
-
+	def add_boxes(self, rl):
 		app = App.get_running_app()
 
 		for i in range(1, 10):
 			site_name = 'center' + str(i)
 
 			box = None
-			if site_name in boxes:
-				box = boxes[site_name]
+			if site_name in self._sites_boxes:
+				box = self._sites_boxes[site_name]
 			else:
 				box = SiteBox(id=site_name)
-				boxes[site_name] = box
+				self._sites_boxes[site_name] = box
 				rl.add_widget(box)
 
 			pos = app.center_to_ll((app.site_center_x[i-1], app.site_center_y[i-1]), (app.crop_size, app.crop_size), app.site_size, True)
@@ -131,6 +133,7 @@ class Settings(Screen):
 	def add_colors(self, rl):
 		x = 240
 		y = 170
+		
 		for color, rgb in COLORS.items():
 			label = LabelBox(id=color)
 			rl.add_widget(label)
@@ -155,7 +158,7 @@ class Settings(Screen):
 				Rectangle(size=(32, 32), pos=(site.x + 34, site.y + 2))
 			self._selected_color = None
 
-	def get_site_color(self, site):
+	def set_touched_color(self, site):
 		face_colors = App.get_running_app().mycube.scan_face()
 		sitenum = int(site.id[-1]) - 1
 		self._selected_color = face_colors[sitenum]
