@@ -57,6 +57,16 @@ COLORS = {
 	'white': [1.0, 1.0, 1.0],
 }
 
+# used for retrieving COLORS in pretty rainbow order
+CKEYS = [
+	'red',
+	'orange',
+	'yellow',
+	'green',
+	'blue',
+	'white'
+]
+
 class RubikSolver(BoxLayout):
 	pass
 
@@ -134,12 +144,12 @@ class Settings(Screen):
 		x = 240
 		y = 170
 		
-		for color, rgb in COLORS.items():
+		for color in CKEYS:
 			label = LabelBox(id=color)
 			rl.add_widget(label)
 			raw_rgb = App.get_running_app().colors[color]
 			with label.canvas:
-				r, g, b = rgb
+				r, g, b = COLORS[color]
 				Color(r, g, b)
 				Rectangle(size=(32, 32), pos=(x + 2, y + 2))
 				r2, g2, b2 = raw_rgb
@@ -197,7 +207,7 @@ class Solve(Screen):
 	
 		self._dropdown = SelectDropdown()
 		# add each solve to pattern to dropdown
-		for solution in rscube.PATTERNS:
+		for solution in sorted(rscube.PATTERNS):
 			btn = Button(text=solution, size_hint_y=None, height=40)
 			btn.bind(on_release=lambda btn: self._dropdown.select(btn.text))
 			self._dropdown.add_widget(btn)
@@ -309,10 +319,10 @@ class Scan(Screen):
 			self._bubble = bubble = ColorBubble() # create a new bubble object
 			bubble.size_hint = (None, None)
 			bubble.size = (240, 45)
-			for color, val in COLORS.items(): # set the colors of the buttons
+			for color in CKEYS: # set the colors of the buttons
 				cb = CBButton()
 				cb.id = color
-				rgb = [a for a in val]
+				rgb = [a for a in COLORS[color]]
 				rgb.append(1)
 				cb.background_color = rgb
 				cb.background_normal = ''
