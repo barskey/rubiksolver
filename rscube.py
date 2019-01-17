@@ -1,4 +1,4 @@
-#from kociemba import solve
+from kociemba import solve
 from PIL import Image, ImageStat
 import time
 #import RPi.GPIO as GPIO
@@ -314,13 +314,13 @@ class MyCube(object):
 		for i in ROT_TABLE[rot]:
 			ret_colors.append(self._raw_colors[face][i - 1])
 		return ret_colors # returns rotated list of raw_colors
-		
+
 	def get_abs_site(self, site_r):
 		"""
 		Transposes site numbers given up_face rotation. Returns unrotated site number given rotated site.
 		"""
 		return ROT_TABLE[UP_FACE_ROT[self._orientation]][site_r - 1]
-	
+
 	def set_face_colors(self):
 		"""
 		Sets face color for all faces.
@@ -329,7 +329,7 @@ class MyCube(object):
 		for face, colors in enumerate(self._match_colors):
 			self._face_colors[face] = colors[4]
 		#print self._face_colors # debug
-	
+
 	def check_face_colors(self):
 		"""
 		Checks that each face has a color assigned and that they are unique
@@ -340,7 +340,7 @@ class MyCube(object):
 			return False
 		else:
 			return True
-			
+
 	def check_face_matched(self, f):
 		"""
 		Checks that each site on a face has a matched color
@@ -352,14 +352,14 @@ class MyCube(object):
 			return False
 		else:
 			return True
-	
+
 	def clear_matched(self):
 		"""
 		Clears all matched sites on all faces for a re-scan_face
 		"""
 		self._match_colors = [[None for i in range(9)] for j in self._face_colors]
 		return
-	
+
 	def check_all_sites(self):
 		"""
 		Checks that there are exactly 9 of each match_color.
@@ -373,7 +373,7 @@ class MyCube(object):
 			if sum(f.count(color) for f in self._match_colors) != 9:
 				return False
 		return True
-	
+
 	def get_solve_string(self):
 		"""
 		Gets the solve string
@@ -384,12 +384,15 @@ class MyCube(object):
 		"""
 		Sets the solve string from kociemba
 		"""
-		cubedef = self.get_cube_def()
-		#print cubedef # debug
-#		self._solve_string = solve(cube_def, self.solve_to)
-		self._solve_string = "R' D2 R' U2 R F2 D B2 U' R F' U R2 D L2 D' B2 R2 B2 U' B2" # debug
+		cube_def = self.get_cube_def()
+		print cube_def # debug
+		print self._solve_to # debug
+		cube_def = 'FLRLURDBLUUBBRLFRDRLFBFDBURLFUDDFBDRDUBBLRLFDUDLFBUFRU' # debug because pics are not in the correct order - hence unsolvable
+		self._solve_string = solve(cube_def, self._solve_to)
+		#self._solve_string = "R' D2 R' U2 R F2 D B2 U' R F' U R2 D L2 D' B2 R2 B2 U' B2" # debug
+		print self._solve_string # debug
 		return self._solve_string
-	
+
 	def set_cube_colors(self):
 		"""
 		Sets each site to letter representing face color
@@ -398,7 +401,7 @@ class MyCube(object):
 			for s in range(9):
 				self._cube_colors[f][s] = FACES_STR[self._face_colors.index(self._match_colors[f][s])]
 		#print self._cube_colors # debug
-	
+
 	def get_cube_def(self):
 		"""
 		Returns cube_def in the form UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB
@@ -443,7 +446,7 @@ class MyCube(object):
 		sitenum = self.get_abs_site(int(site_r))
 		upface = FACES[self.get_up_face()]
 		self._raw_colors[upface][sitenum - 1] = rawcolor
-		
+
 	def set_up_match_color(self, site_r, color):
 		"""
 		Sets matched color on up_face for given (possibly) rotated site_r
@@ -468,6 +471,7 @@ class MyCube(object):
 
 		self._grip_state[gripper] = temp
 		print '%s gripper %s' % (temp, gripper)
+		print 'State:' + self._grip_state[gripper]
 		#time.sleep(1)
 
 	def twist(self, gripper, dir):
@@ -479,8 +483,8 @@ class MyCube(object):
 		o = self._orientation
 
 		other_gripper = 'B' if gripper == 'A' else 'A'
-		if self._grip_state[gripper] == 'Load': # don't twist if gripper is in load position
-			print 'Can\'t twist %s. Currently in load position.' % gripper
+		if self._grip_state[gripper] == 'Load' or self._grip_state[gripper] == 'Open': # don't twist if gripper is in wither open or load position
+			print 'Can\'t twist %s. Currently in %s position.' % (gripper, self._grip_state[gripper])
 			return
 		if self._grip_state[other_gripper] == 'Load': # don't twist if other gripper is in load position
 			print 'Can\'t twist %s. Gripper %s currently in load position.' % (gripper, other_gripper)
@@ -489,7 +493,7 @@ class MyCube(object):
 			self._orientation = NEW_ORIENTATION_TWISTA[o][dir] if gripper == 'A' else NEW_ORIENTATION_TWISTB[o][dir]
 			print 'Twist gripper %s %s New orientation: %s' % (gripper, dir, self._orientation)
 			#time.sleep(.1)
-		else:
+		else: # other gripper must be closed, hence it will twist face
 			print 'Twist gripper %s %s' % (gripper, dir)
 			#time.sleep(.1)
 

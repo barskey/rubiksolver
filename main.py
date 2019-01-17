@@ -79,7 +79,7 @@ class DragBox(DragBehavior, Label):
 class SiteBox(DragBehavior, Label):
 	def on_pos(self, *args):
 		app = App.get_running_app()
-		
+
 		center = app.ll_to_center((self.x, self.y), (app.crop_size, app.crop_size), app.site_size, True)
 		app.update_config('Sites', self.id + '_x', center[0])
 		app.update_config('Sites', self.id + '_y', center[1])
@@ -95,7 +95,7 @@ class SiteBox(DragBehavior, Label):
 class LabelBox(Label):
 	def on_touch_down(self, touch):
 		app = App.get_running_app()
-		
+
 		if self.collide_point(*touch.pos):
 			app.sm.get_screen('settings').set_selected_color(self)
 			return True
@@ -139,11 +139,11 @@ class Settings(Screen):
 			pos = app.center_to_ll((app.site_center_x[i-1], app.site_center_y[i-1]), (app.crop_size, app.crop_size), app.site_size, True)
 			box.size = (app.site_size, app.site_size)
 			box.pos = pos
-	
+
 	def add_colors(self, rl):
 		x = 240
 		y = 170
-		
+
 		for color in CKEYS:
 			label = LabelBox(id=color)
 			rl.add_widget(label)
@@ -157,7 +157,7 @@ class Settings(Screen):
 				Rectangle(size=(32, 32), pos=(x + 34, y + 2))
 			label.pos = (x, y)
 			y -= 40
-			
+
 	def set_selected_color(self, site):
 		if self._selected_color is not None:
 			col = ','.join(format(x, '1.0f') for x in self._selected_color)
@@ -185,37 +185,37 @@ class SelectDropdown(DropDown):
 		scr = app.sm.get_screen('solve')
 		btn = scr.ids.btn_select
 		img = scr.ids.img_solve
-		
+
 		btn.text = data
 		scr.ids.solve_to.text = data
 		app.mycube.solve_to = data
 		if app.mycube.set_solve_string() >= 0: # TODO verify what the solve method actually returns
 			moves = str(len(app.mycube.get_solve_string().split(' ')))
 			scr.ids.moves_req.text = moves # TODO add case for non int moves
-			
+
 		newsrc = None # TODO set image to question mark img in case can't find solve to img
 		newsrc = 'data/' + rscube.PATTERNS[data][0]
 		img.source = newsrc
 
 class SolveLabel(Label):
 	pass
-	
+
 class Solve(Screen):
 	def on_pre_enter(self):
 		img = self.ids.img_solve
 		img.source = 'data/_solid.jpg'
-	
+
 		self._dropdown = SelectDropdown()
 		# add each solve to pattern to dropdown
 		for solution in sorted(rscube.PATTERNS):
 			btn = Button(text=solution, size_hint_y=None, height=40)
 			btn.bind(on_release=lambda btn: self._dropdown.select(btn.text))
 			self._dropdown.add_widget(btn)
-		
+
 		cube = App.get_running_app().mycube
 		self.ids.solve_to.text = 'Solid Cube'
 		self.ids.moves_req.text = str(len(cube.get_solve_string().split(' ')))
-	
+
 	def run_solve(self):
 		app = App.get_running_app()
 		cube  = app.mycube
@@ -229,7 +229,7 @@ class Solve(Screen):
 			for move in solve_string.split(' '):
 				print 'move', move
 				face = move[0] # first char is which face to move
-				dir = move[1] if len(move) > 1 else '+' # second char will be either ` or 2. 
+				dir = move[1] if len(move) > 1 else '+' # second char will be either ` or 2.
 				gripper = cube.move_face_for_twist(face) # returns gripper to which face was moved
 				if dir == "'": # CCW
 					cube.twist(gripper, '-') # twist CCW
@@ -292,11 +292,11 @@ class CBButton(BubbleButton):
 		cube.set_up_raw_color(sitenum, raw_color) # set raw_color for this site on cube object
 		cube.set_up_match_color(int(sitenum), self.id) # set match_color for this site on cube object
 		print 'Set site %s match_color to %s.' % (sitenum, self.id)
-		
+
 		# enable the button if all the sites on this face have been matched
 		if cube.check_face_matched(cube.get_up_face()[0]):
 			scr.ids.btn_next.disabled = False
-	
+
 class Scan(Screen):
 	_sites = {}
 	_bubble = None
@@ -349,7 +349,7 @@ class Scan(Screen):
 				self._index = self._index + 1
 				self.scan_cube()
 			else:
-				self.ids.scan_status.text = 'Touch the boxes shown in pink\nto fix the colors.'
+				self.ids.scan_status.text = 'Touch the highlighted boxes\nto fix the colors.'
 				self.ids.scan_status.color = (1, 0, 0, 1)
 				self.ids.btn_next.disabled = True
 				self._index = self._index + 1 # increment the index for the next face when button is enabled
@@ -361,7 +361,7 @@ class Scan(Screen):
 			print 'Moving face %s to %s.' % ('D', 'B')
 			cube.move_face_for_twist('D', 'B') # move face to get back to original position
 			print cube.orientation # debug
-			
+
 			# If we get this far, all sides have been processed and face colors have been set.
 			# Check that there are exactly 9 of each color
 			if cube.check_all_sites():
@@ -374,7 +374,7 @@ class Scan(Screen):
 				cube.clear_matched() # clear the matched colors so we can start over
 				self._index = 0
 				return
-				
+
 			# Now check that all faces have a unique color before setting cube colors.
 			if cube.check_face_colors():
 				cube.set_cube_colors() # Now cube can set its own cube_colors
@@ -402,7 +402,7 @@ class Scan(Screen):
 				self.ids.scan_status.color = (0, 1, 0, 1)
 				self.ids.btn_next.text = 'Done'
 				app.go_screen('solve', 'left')
-	
+
 	def scan_face(self, index):
 		"""
 		Moves face according to instructions in SCANCUBE, then scans face.
@@ -491,7 +491,7 @@ class Scan(Screen):
 			print '--------------------------------'
 			print 'Finished scanning %i. GOOD SCAN.' % index
 			return True
-	
+
 class RubikSolverApp(App):
 
 	mycube = None
