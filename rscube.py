@@ -483,8 +483,8 @@ class MyCube(object):
 		o = self._orientation
 
 		other_gripper = 'B' if gripper == 'A' else 'A'
-		if self._grip_state[gripper] == 'Load' or self._grip_state[gripper] == 'Open': # don't twist if gripper is in wither open or load position
-			print 'Can\'t twist %s. Currently in %s position.' % (gripper, self._grip_state[gripper])
+		if self._grip_state[gripper] == 'Load': # don't twist if gripper is in load position
+			print 'Can\'t twist %s. Gripper %s currently in %s position.' % (gripper, other_gripper, self._grip_state[gripper])
 			return
 		if self._grip_state[other_gripper] == 'Load': # don't twist if other gripper is in load position
 			print 'Can\'t twist %s. Gripper %s currently in load position.' % (gripper, other_gripper)
